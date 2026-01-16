@@ -1,0 +1,16 @@
+.appShell{
+  display:flex;
+  min-height:100vh;
+}
+
+.appMain{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+
+.appContent{
+  padding: 18px 18px 26px;
+  min-width:0;
+}
