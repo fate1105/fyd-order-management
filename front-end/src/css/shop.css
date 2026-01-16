@@ -1,0 +1,476 @@
+/* Shop / Customer UI */
+.shopPage {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Shop Header */
+.shopHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(12px);
+}
+
+.shopBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.shopLogo {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), rgba(110,168,255,0.8));
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.shopBrandName {
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.shopNav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shopNavLink {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.shopNavLink:hover,
+.shopNavLink.active {
+  background: var(--panel2);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.shopActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cartBtn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.cartBtn:hover {
+  background: var(--panel2);
+}
+
+.cartBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+/* Shop Content */
+.shopContent {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Hero Banner */
+.shopHero {
+  padding: 40px 32px;
+  border-radius: var(--r2);
+  background: linear-gradient(135deg, rgba(75,240,200,0.12), rgba(110,168,255,0.08));
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.shopHeroTitle {
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.shopHeroDesc {
+  margin-top: 10px;
+  color: var(--muted);
+  max-width: 50ch;
+  margin-inline: auto;
+  line-height: 1.5;
+}
+
+/* Filter Bar */
+.filterBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filterLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filterRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.searchInput {
+  min-width: 260px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: rgba(75,240,200,0.4);
+  box-shadow: 0 0 0 4px rgba(75,240,200,0.08);
+}
+
+.searchInput::placeholder {
+  color: var(--muted2);
+}
+
+/* Product Grid */
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.productCard {
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  background: var(--panel);
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.productCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+}
+
+body.light .productCard:hover {
+  box-shadow: 0 12px 40px rgba(15,23,42,0.1);
+}
+
+.productImg {
+  width: 100%;
+  aspect-ratio: 1;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(75,240,200,0.15), transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(110,168,255,0.15), transparent 50%),
+    var(--panel2);
+  display: grid;
+  place-items: center;
+  font-size: 48px;
+  color: var(--muted2);
+}
+
+.productBody {
+  padding: 16px;
+}
+
+.productCategory {
+  font-size: 12px;
+  color: var(--muted2);
+  margin-bottom: 6px;
+}
+
+.productName {
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.productPrice {
+  margin-top: 10px;
+  font-weight: 900;
+  font-size: 18px;
+  color: var(--accent);
+}
+
+.productFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  gap: 10px;
+}
+
+.stockTag {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  color: var(--muted);
+}
+
+.stockTag.low {
+  border-color: rgba(255,211,110,0.4);
+  background: rgba(255,211,110,0.1);
+  color: var(--warn);
+}
+
+.stockTag.out {
+  border-color: rgba(255,107,122,0.4);
+  background: rgba(255,107,122,0.1);
+  color: var(--danger);
+}
+
+.addCartBtn {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(75,240,200,0.4);
+  background: rgba(75,240,200,0.12);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.addCartBtn:hover {
+  background: rgba(75,240,200,0.2);
+}
+
+.addCartBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Cart Drawer */
+.cartBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 40;
+}
+
+body.light .cartBackdrop {
+  background: rgba(15,23,42,0.2);
+}
+
+.cartDrawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(420px, 100vw);
+  height: 100vh;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+}
+
+.cartHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cartTitle {
+  font-weight: 850;
+  font-size: 18px;
+}
+
+.cartList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cartItem {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+}
+
+.cartItemImg {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(75,240,200,0.12), transparent 50%),
+    var(--panel);
+}
+
+.cartItemInfo {
+  flex: 1;
+}
+
+.cartItemName {
+  font-weight: 700;
+}
+
+.cartItemPrice {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.cartItemQty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.qtyBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.qtyBtn:hover {
+  background: var(--panel2);
+}
+
+.cartItemRemove {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,107,122,0.3);
+  background: rgba(255,107,122,0.1);
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.cartEmpty {
+  text-align: center;
+  color: var(--muted);
+  padding: 40px 20px;
+}
+
+.cartFooter {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.cartTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.cartTotalLabel {
+  color: var(--muted);
+}
+
+.cartTotalValue {
+  font-weight: 900;
+  font-size: 20px;
+}
+
+.checkoutBtn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(75,240,200,0.5);
+  background: rgba(75,240,200,0.15);
+  color: var(--text);
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.checkoutBtn:hover {
+  background: rgba(75,240,200,0.25);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .shopHeader {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .shopNav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .filterBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .searchInput {
+    min-width: 100%;
+  }
+  
+  .productGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .productGrid {
+    grid-template-columns: 1fr;
+  }
+}
