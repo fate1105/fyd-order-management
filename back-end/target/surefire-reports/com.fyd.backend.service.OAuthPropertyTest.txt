@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.fyd.backend.service.OAuthPropertyTest
+-------------------------------------------------------------------------------
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.701 s -- in com.fyd.backend.service.OAuthPropertyTest

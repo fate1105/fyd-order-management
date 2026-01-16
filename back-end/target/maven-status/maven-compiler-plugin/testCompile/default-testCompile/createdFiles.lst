@@ -1,0 +1,4 @@
+com\fyd\backend\service\CustomerAuthPropertyTest.class
+com\fyd\backend\service\JwtServicePropertyTest.class
+com\fyd\backend\FydBackendApplicationTests.class
+com\fyd\backend\service\OAuthPropertyTest.class
