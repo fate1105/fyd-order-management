@@ -20,6 +20,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     
     List<Order> findByCustomerId(Long customerId);
     
+    Page<Order> findByCustomerId(Long customerId, Pageable pageable);
+    
+    @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items WHERE o.customer.id = :customerId")
+    List<Order> findByCustomerIdWithItems(@Param("customerId") Long customerId);
+    
     @Query("SELECT o FROM Order o WHERE " +
            "(LOWER(o.orderCode) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
            "LOWER(o.shippingName) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
@@ -31,6 +36,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     
     @Query("SELECT COUNT(o) FROM Order o WHERE o.status = :status")
     Long countByStatus(@Param("status") String status);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :from")
+    Long countFrom(@Param("from") LocalDateTime from);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.status = :status AND o.createdAt >= :from")
+    Long countByStatusFrom(@Param("status") String status, @Param("from") LocalDateTime from);
     
     @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.status = 'DELIVERED' OR o.status = 'COMPLETED'")
     BigDecimal getTotalRevenue();

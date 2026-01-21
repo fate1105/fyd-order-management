@@ -1,0 +1,533 @@
+/* auth.css - Premium Dark Glassmorphism Authentication Styles */
+
+/* =====================================================
+   AUTH PAGE BACKGROUND
+   ===================================================== */
+.authPage {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--admin-bg);
+  font-family: var(--admin-font);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated Gradient Background */
+.authPage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(96, 165, 250, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 60%, rgba(167, 139, 250, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 30% at 50% 80%, rgba(96, 165, 250, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  animation: gradient-shift 15s ease-in-out infinite;
+  background-size: 200% 200%;
+}
+
+/* Grid Pattern Overlay */
+.authPage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+/* =====================================================
+   AUTH CARD - Single Centered Card
+   ===================================================== */
+.authCard {
+  width: min(460px, 94vw);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--admin-radius-xl);
+  padding: 48px;
+  backdrop-filter: blur(var(--admin-blur-heavy));
+  -webkit-backdrop-filter: blur(var(--admin-blur-heavy));
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  position: relative;
+  z-index: 1;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Glow Border Effect */
+.authCard::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--admin-radius-xl);
+  padding: 1px;
+  background: linear-gradient(135deg,
+      rgba(96, 165, 250, 0.3) 0%,
+      transparent 50%,
+      rgba(167, 139, 250, 0.3) 100%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--admin-transition-slow);
+}
+
+.authCard:hover::before {
+  opacity: 1;
+}
+
+/* Hide the old left panel on desktop */
+.authLeft {
+  display: none;
+}
+
+.authRight {
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =====================================================
+   BRAND SECTION
+   ===================================================== */
+.authBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  justify-content: center;
+}
+
+.authLogo {
+  width: 48px;
+  height: 48px;
+  background: var(--admin-accent-gradient);
+  color: #0a0a0f;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 16px;
+  border-radius: var(--admin-radius-md);
+  letter-spacing: 1px;
+}
+
+.authBrandText .name {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--admin-text);
+  letter-spacing: -0.5px;
+}
+
+.authBrandText .tagline {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+  margin-top: 2px;
+}
+
+/* =====================================================
+   AUTH HEADER
+   ===================================================== */
+.authHead {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.authHead .h {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--admin-text);
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+
+.authHead .p {
+  font-size: 14px;
+  color: var(--admin-text-muted);
+  line-height: 1.5;
+}
+
+/* =====================================================
+   AUTH FORM
+   ===================================================== */
+.authForm {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Form Field */
+.aField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aField span {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  letter-spacing: 0.5px;
+}
+
+/* Input Styles */
+.aInput {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text);
+  font-family: var(--admin-font);
+  font-size: 14px;
+  outline: none;
+  transition: all var(--admin-transition);
+}
+
+.aInput::placeholder {
+  color: var(--admin-text-muted-2);
+}
+
+.aInput:hover:not(:focus) {
+  border-color: var(--admin-border-hover);
+}
+
+.aInput:focus {
+  border-color: var(--admin-accent);
+  background: rgba(var(--admin-accent-rgb), 0.02);
+  box-shadow: 0 0 0 3px rgba(var(--admin-accent-rgb), 0.1);
+}
+
+/* Input Row (for password with icon) */
+.aInputRow {
+  position: relative;
+  display: flex;
+}
+
+.aInputRow .aInput {
+  padding-right: 48px;
+}
+
+/* Icon Button */
+.aBtnIcon {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--admin-transition);
+}
+
+.aBtnIcon:hover {
+  background: var(--glass-hover);
+  color: var(--admin-text);
+}
+
+.aBtnIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* =====================================================
+   CAPTCHA BOX
+   ===================================================== */
+.captchaBox {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.captchaQ {
+  padding: 14px 20px;
+  background: var(--glass-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  font-weight: 700;
+  font-size: 16px;
+  font-family: var(--admin-font-mono);
+  color: var(--admin-accent);
+  min-width: 100px;
+  text-align: center;
+}
+
+.captchaBox .aInput {
+  flex: 1;
+  max-width: 100px;
+  text-align: center;
+  font-family: var(--admin-font-mono);
+}
+
+.captchaBox .aBtnIcon {
+  position: static;
+  transform: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+}
+
+/* =====================================================
+   AUTH ROW (Remember + Forgot)
+   ===================================================== */
+.authRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Custom Checkbox */
+.aCheck {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  transition: color var(--admin-transition);
+}
+
+.aCheck:hover {
+  color: var(--admin-text);
+}
+
+.aCheck input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--glass-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--admin-transition);
+}
+
+.aCheck input[type="checkbox"]:hover {
+  border-color: var(--admin-accent);
+}
+
+.aCheck input[type="checkbox"]:checked {
+  background: var(--admin-accent-gradient);
+  border-color: transparent;
+}
+
+.aCheck input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  width: 4px;
+  height: 8px;
+  border: solid #0a0a0f;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Link */
+.aLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--admin-accent);
+  text-decoration: none;
+  transition: all var(--admin-transition);
+}
+
+.aLink:hover {
+  color: var(--admin-accent-2);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* =====================================================
+   ERROR & INFO MESSAGES
+   ===================================================== */
+.aError {
+  background: var(--admin-error-bg);
+  color: var(--admin-error);
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--admin-radius-md);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aError::before {
+  content: '';
+  width: 4px;
+  height: 100%;
+  min-height: 20px;
+  background: var(--admin-error);
+  border-radius: 2px;
+  margin-left: -16px;
+  margin-right: 6px;
+}
+
+.aInfo {
+  background: var(--admin-success-bg);
+  color: var(--admin-success);
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--admin-radius-md);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+/* =====================================================
+   PRIMARY BUTTON
+   ===================================================== */
+.aPrimary {
+  width: 100%;
+  padding: 16px 24px;
+  background: var(--admin-accent-gradient);
+  color: #0a0a0f;
+  font-family: var(--admin-font);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border: none;
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  transition: all var(--admin-transition);
+  box-shadow: 0 4px 16px rgba(var(--admin-accent-rgb), 0.3);
+  margin-top: 8px;
+}
+
+.aPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(var(--admin-accent-rgb), 0.4);
+}
+
+.aPrimary:active {
+  transform: translateY(0);
+}
+
+.aPrimary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =====================================================
+   GHOST BUTTON
+   ===================================================== */
+.aGhost {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  color: var(--admin-text-muted);
+  font-family: var(--admin-font);
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  transition: all var(--admin-transition);
+  margin-top: 8px;
+  text-align: center;
+  display: block;
+  text-decoration: none;
+}
+
+.aGhost:hover {
+  border-color: var(--admin-border-hover);
+  background: var(--glass-hover);
+  color: var(--admin-text);
+}
+
+/* =====================================================
+   DIVIDER
+   ===================================================== */
+.authDivider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.authDivider::before,
+.authDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--admin-border);
+}
+
+.authDivider span {
+  font-size: 12px;
+  color: var(--admin-text-muted-2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+@media (max-width: 480px) {
+  .authCard {
+    padding: 32px 24px;
+    border-radius: var(--admin-radius-lg);
+  }
+
+  .authHead .h {
+    font-size: 24px;
+  }
+
+  .authRow {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .captchaBox {
+    flex-wrap: wrap;
+  }
+}
+
+/* =====================================================
+   ANIMATIONS
+   ===================================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes gradient-shift {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}

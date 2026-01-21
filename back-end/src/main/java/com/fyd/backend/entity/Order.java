@@ -75,6 +75,15 @@ public class Order {
     @Column(name = "cancel_reason")
     private String cancelReason;
 
+    @Column(name = "promotion_code", length = 50)
+    private String promotionCode;
+
+    @Column(name = "points_used")
+    private Integer pointsUsed = 0;
+
+    @Column(name = "points_earned")
+    private Integer pointsEarned = 0;
+
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
@@ -143,4 +152,10 @@ public class Order {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public List<OrderItem> getItems() { return items; }
     public void setItems(List<OrderItem> items) { this.items = items; }
+    public String getPromotionCode() { return promotionCode; }
+    public void setPromotionCode(String promotionCode) { this.promotionCode = promotionCode; }
+    public Integer getPointsUsed() { return pointsUsed; }
+    public void setPointsUsed(Integer pointsUsed) { this.pointsUsed = pointsUsed; }
+    public Integer getPointsEarned() { return pointsEarned; }
+    public void setPointsEarned(Integer pointsEarned) { this.pointsEarned = pointsEarned; }
 }

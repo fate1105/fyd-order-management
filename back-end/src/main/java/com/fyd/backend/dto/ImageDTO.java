@@ -8,8 +8,6 @@ public class ImageDTO {
     private String altText;
     private Boolean isPrimary;
     private Integer sortOrder;
-    private String color;
-    private Long colorId;
 
     public static ImageDTO fromEntity(ProductImage img) {
         ImageDTO dto = new ImageDTO();
@@ -18,8 +16,6 @@ public class ImageDTO {
         dto.setAltText(img.getAltText());
         dto.setIsPrimary(img.getIsPrimary());
         dto.setSortOrder(img.getSortOrder());
-        dto.setColor(img.getColor() != null ? img.getColor().getName() : null);
-        dto.setColorId(img.getColor() != null ? img.getColor().getId() : null);
         return dto;
     }
 
@@ -34,8 +30,5 @@ public class ImageDTO {
     public void setIsPrimary(Boolean isPrimary) { this.isPrimary = isPrimary; }
     public Integer getSortOrder() { return sortOrder; }
     public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
-    public String getColor() { return color; }
-    public void setColor(String color) { this.color = color; }
-    public Long getColorId() { return colorId; }
-    public void setColorId(Long colorId) { this.colorId = colorId; }
 }
+

@@ -1,0 +1,469 @@
+/* tiers.css - Premium Dark Glassmorphism Styling for Membership Tiers Page */
+
+/* =====================================================
+   TIERS PAGE CONTAINER
+   ===================================================== */
+.tiers-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* =====================================================
+   PAGE HEADER
+   ===================================================== */
+.tiers-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.tiers-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.tiers-header-icon {
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--admin-accent-gradient);
+    border-radius: var(--admin-radius-md);
+    color: #0a0a0f;
+    box-shadow: 0 4px 16px rgba(var(--admin-accent-rgb), 0.3);
+}
+
+.tiers-header-icon svg {
+    width: 26px;
+    height: 26px;
+}
+
+.tiers-header-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--admin-text);
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.tiers-header-subtitle {
+    font-size: 13px;
+    color: var(--admin-text-muted);
+    margin: 6px 0 0 0;
+}
+
+.tiers-header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: rgba(var(--admin-accent-rgb), 0.1);
+    border: 1px solid rgba(var(--admin-accent-rgb), 0.2);
+    border-radius: var(--admin-radius-full);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--admin-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* =====================================================
+   TIERS GRID
+   ===================================================== */
+.tiers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* =====================================================
+   TIER CARD
+   ===================================================== */
+.tier-card {
+    position: relative;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--admin-radius-lg);
+    backdrop-filter: blur(var(--admin-blur));
+    -webkit-backdrop-filter: blur(var(--admin-blur));
+    padding: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.tier-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Tier-specific border colors */
+.tier-card.tier-bronze {
+    border-color: rgba(205, 127, 50, 0.3);
+}
+
+.tier-card.tier-silver {
+    border-color: rgba(192, 192, 192, 0.3);
+}
+
+.tier-card.tier-gold {
+    border-color: rgba(255, 215, 0, 0.3);
+}
+
+.tier-card.tier-platinum {
+    border-color: rgba(229, 228, 226, 0.4);
+    box-shadow: 0 0 30px rgba(229, 228, 226, 0.1);
+}
+
+/* =====================================================
+   TIER CARD HEADER
+   ===================================================== */
+.tier-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.tier-card-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.tier-card-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 24px;
+}
+
+/* Tier-specific icon backgrounds */
+.tier-bronze .tier-card-icon {
+    background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
+    box-shadow: 0 4px 12px rgba(205, 127, 50, 0.3);
+}
+
+.tier-silver .tier-card-icon {
+    background: linear-gradient(135deg, #C0C0C0 0%, #808080 100%);
+    box-shadow: 0 4px 12px rgba(192, 192, 192, 0.3);
+}
+
+.tier-gold .tier-card-icon {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+.tier-platinum .tier-card-icon {
+    background: linear-gradient(135deg, #E5E4E2 0%, #BCC6CC 100%);
+    box-shadow: 0 4px 12px rgba(229, 228, 226, 0.4);
+}
+
+.tier-card-name {
+    font-size: 18px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Tier-specific name colors */
+.tier-bronze .tier-card-name {
+    color: #CD7F32;
+}
+
+.tier-silver .tier-card-name {
+    color: #C0C0C0;
+}
+
+.tier-gold .tier-card-name {
+    color: #FFD700;
+}
+
+.tier-platinum .tier-card-name {
+    color: #E5E4E2;
+}
+
+.tier-member-count {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--admin-radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--admin-text-muted);
+}
+
+.tier-member-count svg {
+    width: 14px;
+    height: 14px;
+    opacity: 0.7;
+}
+
+/* =====================================================
+   TIER THRESHOLD SECTION
+   ===================================================== */
+.tier-threshold {
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.tier-threshold-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--admin-text-muted);
+    margin-bottom: 8px;
+}
+
+.tier-threshold-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--admin-text);
+    font-family: var(--admin-font-mono);
+}
+
+.tier-threshold-unit {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--admin-text-muted);
+    margin-left: 6px;
+}
+
+/* =====================================================
+   TIER BENEFITS LIST
+   ===================================================== */
+.tier-benefits {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tier-benefit-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--admin-text);
+    line-height: 1.4;
+}
+
+.tier-benefit-icon {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(74, 222, 128, 0.15);
+    border-radius: 50%;
+    color: #4ade80;
+    font-size: 10px;
+}
+
+.tier-benefit-text {
+    flex: 1;
+}
+
+.tier-benefit-highlight {
+    font-weight: 700;
+    color: var(--admin-accent);
+}
+
+/* Primary benefit (discount) */
+.tier-benefit-item.primary {
+    padding: 12px 14px;
+    background: rgba(var(--admin-accent-rgb), 0.08);
+    border: 1px solid rgba(var(--admin-accent-rgb), 0.15);
+    border-radius: var(--admin-radius-md);
+    margin-bottom: 4px;
+}
+
+.tier-benefit-item.primary .tier-benefit-icon {
+    background: rgba(var(--admin-accent-rgb), 0.2);
+    color: var(--admin-accent);
+}
+
+/* =====================================================
+   TIER CARD FOOTER (ACTIONS)
+   ===================================================== */
+.tier-card-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    gap: 10px;
+}
+
+.tier-edit-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius-md);
+    color: var(--admin-text);
+    font-family: var(--admin-font);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tier-edit-btn:hover {
+    background: rgba(var(--admin-accent-rgb), 0.1);
+    border-color: rgba(var(--admin-accent-rgb), 0.3);
+    color: var(--admin-accent);
+}
+
+.tier-edit-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* =====================================================
+   RULES SECTION
+   ===================================================== */
+.tiers-rules-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--admin-radius-lg);
+    backdrop-filter: blur(var(--admin-blur));
+    -webkit-backdrop-filter: blur(var(--admin-blur));
+    padding: 24px;
+}
+
+.tiers-rules-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.tiers-rules-header svg {
+    width: 20px;
+    height: 20px;
+    color: var(--admin-accent);
+}
+
+.tiers-rules-title {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--admin-text);
+}
+
+.tiers-rules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tiers-rule-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--admin-text-muted);
+    line-height: 1.5;
+}
+
+.tiers-rule-bullet {
+    color: var(--admin-accent);
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.tiers-rule-item strong {
+    color: var(--admin-text);
+    font-weight: 600;
+}
+
+/* =====================================================
+   LOADING STATE
+   ===================================================== */
+.tiers-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 20px;
+    gap: 20px;
+}
+
+.tiers-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--admin-border);
+    border-top-color: var(--admin-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.tiers-loading-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--admin-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+@media (max-width: 992px) {
+    .tiers-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .tiers-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .tiers-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tier-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .tier-member-count {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 576px) {
+    .tiers-header-left {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}

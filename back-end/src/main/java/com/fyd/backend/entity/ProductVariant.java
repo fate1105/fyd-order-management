@@ -29,11 +29,8 @@ public class ProductVariant {
     @Column(name = "price_adjustment", precision = 12, scale = 2)
     private BigDecimal priceAdjustment = BigDecimal.ZERO;
 
-    @Column(name = "stock_quantity")
+    @Column(name = "stock")
     private Integer stockQuantity = 0;
-
-    @Column(name = "low_stock_threshold")
-    private Integer lowStockThreshold = 5;
 
     @Column(length = 20)
     private String status = "ACTIVE";
@@ -59,8 +56,6 @@ public class ProductVariant {
     public void setPriceAdjustment(BigDecimal priceAdjustment) { this.priceAdjustment = priceAdjustment; }
     public Integer getStockQuantity() { return stockQuantity; }
     public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
-    public Integer getLowStockThreshold() { return lowStockThreshold; }
-    public void setLowStockThreshold(Integer lowStockThreshold) { this.lowStockThreshold = lowStockThreshold; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }

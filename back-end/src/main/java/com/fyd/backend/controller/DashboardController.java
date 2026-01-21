@@ -29,6 +29,9 @@ public class DashboardController {
     
     @Autowired
     private OrderItemRepository orderItemRepository;
+    
+    @Autowired
+    private com.fyd.backend.service.AiInsightService aiInsightService;
 
     @GetMapping
     public ResponseEntity<DashboardDTO> getDashboard() {
@@ -56,9 +59,20 @@ public class DashboardController {
         // Pending orders
         dashboard.setPendingOrders(orderRepository.countByStatus("PENDING"));
         
-        // Return rate (mock for now)
-        dashboard.setReturnRate(BigDecimal.valueOf(1.7));
-        dashboard.setReturnRateChange(BigDecimal.valueOf(-0.3));
+        // Return rate (last 30 days)
+        LocalDateTime last30Days = todayStart.minusDays(30);
+        Long totalOrders30 = orderRepository.countFrom(last30Days);
+        Long returnedOrders30 = orderRepository.countByStatusFrom("RETURNED", last30Days);
+        
+        if (totalOrders30 > 0) {
+            BigDecimal rate = BigDecimal.valueOf(returnedOrders30)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(totalOrders30), 1, RoundingMode.HALF_UP);
+            dashboard.setReturnRate(rate);
+        } else {
+            dashboard.setReturnRate(BigDecimal.ZERO);
+        }
+        dashboard.setReturnRateChange(BigDecimal.ZERO); // Baseline comparison would need 60 days of data
         
         // Low stock products
         dashboard.setLowStockProducts((long) variantRepository.findLowStock(6).size());
@@ -114,7 +128,7 @@ public class DashboardController {
         for (Object[] row : dailyRevenue) {
             Map<String, Object> point = new HashMap<>();
             point.put("date", row[0].toString());
-            point.put("value", row[1] != null ? ((BigDecimal) row[1]).longValue() : 0);
+            point.put("value", row[1] != null ? ((Number) row[1]).longValue() : 0);
             chartData.add(point);
         }
         
@@ -129,7 +143,7 @@ public class DashboardController {
             product.put("id", row[0]);
             product.put("name", row[1]);
             product.put("qty", ((Number) row[2]).intValue());
-            product.put("revenue", ((BigDecimal) row[3]).longValue());
+            product.put("revenue", ((Number) row[3]).longValue());
             topProductsData.add(product);
         }
         
@@ -150,5 +164,42 @@ public class DashboardController {
         response.put("pendingOrders", pendingCount);
         
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/ai-suggestions")
+    public ResponseEntity<List<com.fyd.backend.dto.AiInsight>> getAiSuggestions() {
+        List<com.fyd.backend.dto.AiInsight> insights = aiInsightService.generateAllInsights();
+        return ResponseEntity.ok(insights);
+    }
+    
+    @PostMapping("/ai-action/apply")
+    public ResponseEntity<com.fyd.backend.dto.AiActionResult> applyAiAction(
+            @RequestBody Map<String, Object> request) {
+        
+        String insightId = request.get("insightId") != null ? request.get("insightId").toString() : "";
+        String category = request.get("category") != null ? request.get("category").toString() : "";
+        
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = request.get("data") != null 
+            ? (Map<String, Object>) request.get("data") 
+            : new HashMap<>();
+        
+        // Route to appropriate action handler based on category
+        com.fyd.backend.dto.AiActionResult result;
+        
+        if ("inventory_warning".equals(category)) {
+            result = aiInsightService.applyInventoryAction(insightId, data);
+        } else {
+            // Default fallback for other categories
+            result = com.fyd.backend.dto.AiActionResult.builder()
+                .success(true)
+                .title("Hành động đã ghi nhận")
+                .summary("Gợi ý đã được ghi nhận. Vui lòng thực hiện thủ công các bước tiếp theo.")
+                .reasoning("Hành động tự động cho danh mục này chưa được hỗ trợ đầy đủ.")
+                .timestamp(java.time.LocalDateTime.now())
+                .build();
+        }
+        
+        return ResponseEntity.ok(result);
     }
 }

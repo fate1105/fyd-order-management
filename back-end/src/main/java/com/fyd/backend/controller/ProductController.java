@@ -2,21 +2,30 @@ package com.fyd.backend.controller;
 
 import com.fyd.backend.dto.ProductDTO;
 import com.fyd.backend.entity.Product;
+import com.fyd.backend.entity.ProductImage;
 import com.fyd.backend.entity.ProductVariant;
 import com.fyd.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -38,6 +47,15 @@ public class ProductController {
     
     @Autowired
     private ProductImageRepository imageRepository;
+
+    @Autowired
+    private SizeRepository sizeRepository;
+
+    @Autowired
+    private ColorRepository colorRepository;
+    
+    @Value("${file.upload-dir:uploads}")
+    private String uploadDir;
 
     @GetMapping
     @Transactional(readOnly = true)
@@ -106,11 +124,39 @@ public class ProductController {
     }
 
     @PostMapping
+    @Transactional
     public ResponseEntity<ProductDTO> createProduct(@RequestBody ProductDTO dto) {
         Product product = new Product();
         updateProductFromDTO(product, dto);
         product.setCreatedAt(LocalDateTime.now());
         Product saved = productRepository.save(product);
+        
+        // Always create at least one variant so it shows up in inventory
+        ProductVariant variant = new ProductVariant();
+        variant.setProduct(saved);
+        variant.setSkuVariant(saved.getSku() + "-DEF");
+        
+        // Set size if provided
+        if (dto.getInitialSizeId() != null) {
+            sizeRepository.findById(dto.getInitialSizeId())
+                .ifPresent(variant::setSize);
+        }
+        
+        // Set color if provided
+        if (dto.getInitialColorId() != null) {
+            colorRepository.findById(dto.getInitialColorId())
+                .ifPresent(variant::setColor);
+        }
+        
+        variant.setStockQuantity(dto.getInitialStock() != null ? dto.getInitialStock() : 0);
+        variant.setPriceAdjustment(BigDecimal.ZERO);
+        variant.setCreatedAt(LocalDateTime.now());
+        variant.setStatus("ACTIVE");
+        variantRepository.save(variant);
+        
+        // Reload product to include variants
+        saved = productRepository.findById(saved.getId()).orElse(saved);
+        
         return ResponseEntity.ok(ProductDTO.fromEntity(saved));
     }
 
@@ -166,6 +212,76 @@ public class ProductController {
                 // Reload and return
                 product.getImages().size(); // Force load
                 return ResponseEntity.ok(ProductDTO.fromEntity(product));
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/images")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> uploadProductImage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        
+        return productRepository.findById(id)
+            .map(product -> {
+                try {
+                    // Validate file
+                    if (file.isEmpty()) {
+                        return ResponseEntity.badRequest().<Map<String, Object>>body(Map.of("error", "File is empty"));
+                    }
+                    
+                    // Create upload directory if not exists
+                    Path uploadPath = Paths.get(uploadDir, "products");
+                    if (!Files.exists(uploadPath)) {
+                        Files.createDirectories(uploadPath);
+                    }
+                    
+                    // Generate unique filename
+                    String originalFilename = file.getOriginalFilename();
+                    String extension = originalFilename != null && originalFilename.contains(".") 
+                        ? originalFilename.substring(originalFilename.lastIndexOf(".")) 
+                        : ".jpg";
+                    String newFilename = "product_" + id + "_" + UUID.randomUUID().toString().substring(0, 8) + extension;
+                    
+                    // Save file
+                    Path filePath = uploadPath.resolve(newFilename);
+                    Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+                    
+                    // Create ProductImage entity
+                    ProductImage productImage = new ProductImage();
+                    productImage.setProduct(product);
+                    productImage.setImageUrl("/uploads/products/" + newFilename);
+                    productImage.setSortOrder(product.getImages().size());
+                    productImage.setIsPrimary(product.getImages().isEmpty()); // First image is primary
+                    productImage.setCreatedAt(LocalDateTime.now());
+                    
+                    ProductImage savedImage = imageRepository.save(productImage);
+                    
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", true);
+                    response.put("imageId", savedImage.getId());
+                    response.put("imageUrl", savedImage.getImageUrl());
+                    
+                    return ResponseEntity.ok(response);
+                } catch (IOException e) {
+                    return ResponseEntity.internalServerError().<Map<String, Object>>body(Map.of("error", "Upload failed: " + e.getMessage()));
+                }
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{productId}/images/{imageId}")
+    @Transactional
+    public ResponseEntity<Void> deleteProductImage(
+            @PathVariable Long productId,
+            @PathVariable Long imageId) {
+        return imageRepository.findById(imageId)
+            .map(image -> {
+                if (image.getProduct().getId().equals(productId)) {
+                    imageRepository.delete(image);
+                    return ResponseEntity.ok().<Void>build();
+                }
+                return ResponseEntity.badRequest().<Void>build();
             })
             .orElse(ResponseEntity.notFound().build());
     }

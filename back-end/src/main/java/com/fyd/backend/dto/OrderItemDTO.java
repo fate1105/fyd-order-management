@@ -11,8 +11,8 @@ public class OrderItemDTO {
     private String variantInfo;
     private Integer quantity;
     private BigDecimal unitPrice;
-    private BigDecimal discountAmount;
     private BigDecimal lineTotal;
+    private String productImage;
 
     public static OrderItemDTO fromEntity(OrderItem item) {
         OrderItemDTO dto = new OrderItemDTO();
@@ -20,11 +20,32 @@ public class OrderItemDTO {
         dto.setProductId(item.getProduct() != null ? item.getProduct().getId() : null);
         dto.setVariantId(item.getVariant() != null ? item.getVariant().getId() : null);
         dto.setProductName(item.getProductName());
-        dto.setVariantInfo(item.getVariantInfo());
+        
+        // Use stored variantInfo, or build from variant if null (for older orders)
+        String variantInfo = item.getVariantInfo();
+        if ((variantInfo == null || variantInfo.isEmpty()) && item.getVariant() != null) {
+            StringBuilder sb = new StringBuilder();
+            if (item.getVariant().getSize() != null && item.getVariant().getSize().getName() != null) {
+                sb.append(item.getVariant().getSize().getName());
+            }
+            if (item.getVariant().getColor() != null && item.getVariant().getColor().getName() != null) {
+                if (sb.length() > 0) sb.append(" / ");
+                sb.append(item.getVariant().getColor().getName());
+            }
+            variantInfo = sb.length() > 0 ? sb.toString() : null;
+        }
+        dto.setVariantInfo(variantInfo);
+        
         dto.setQuantity(item.getQuantity());
         dto.setUnitPrice(item.getUnitPrice());
-        dto.setDiscountAmount(item.getDiscountAmount());
         dto.setLineTotal(item.getLineTotal());
+        
+        // Get product image from product's images
+        if (item.getProduct() != null && item.getProduct().getImages() != null 
+                   && !item.getProduct().getImages().isEmpty()) {
+            dto.setProductImage(item.getProduct().getImages().get(0).getImageUrl());
+        }
+        
         return dto;
     }
 
@@ -43,8 +64,8 @@ public class OrderItemDTO {
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
     public BigDecimal getUnitPrice() { return unitPrice; }
     public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
-    public BigDecimal getDiscountAmount() { return discountAmount; }
-    public void setDiscountAmount(BigDecimal discountAmount) { this.discountAmount = discountAmount; }
     public BigDecimal getLineTotal() { return lineTotal; }
     public void setLineTotal(BigDecimal lineTotal) { this.lineTotal = lineTotal; }
+    public String getProductImage() { return productImage; }
+    public void setProductImage(String productImage) { this.productImage = productImage; }
 }

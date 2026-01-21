@@ -20,6 +20,10 @@ public class CustomerDTO {
     private LocalDateTime createdAt;
 
     public static CustomerDTO fromEntity(Customer c) {
+        if (c == null) {
+            return null;
+        }
+        
         CustomerDTO dto = new CustomerDTO();
         dto.setId(c.getId());
         dto.setEmail(c.getEmail());
@@ -27,11 +31,22 @@ public class CustomerDTO {
         dto.setPhone(c.getPhone());
         dto.setAvatarUrl(c.getAvatarUrl());
         dto.setGender(c.getGender());
-        dto.setTier(c.getTier() != null ? c.getTier().getName() : null);
-        dto.setTierId(c.getTier() != null ? c.getTier().getId() : null);
-        dto.setTotalSpent(c.getTotalSpent());
-        dto.setTotalOrders(c.getTotalOrders());
-        dto.setPoints(c.getPoints());
+        
+        // Safely handle tier
+        try {
+            if (c.getTier() != null) {
+                dto.setTier(c.getTier().getName());
+                dto.setTierId(c.getTier().getId());
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Could not load tier for customer " + c.getId() + ": " + e.getMessage());
+            dto.setTier(null);
+            dto.setTierId(null);
+        }
+        
+        dto.setTotalSpent(c.getTotalSpent() != null ? c.getTotalSpent() : BigDecimal.ZERO);
+        dto.setTotalOrders(c.getTotalOrders() != null ? c.getTotalOrders() : 0);
+        dto.setPoints(c.getPoints() != null ? c.getPoints() : 0);
         dto.setStatus(c.getStatus());
         dto.setCreatedAt(c.getCreatedAt());
         return dto;

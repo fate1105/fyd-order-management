@@ -1,50 +1,72 @@
+import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import Layout from "./components/Layout.jsx";
+import { initFacebookSdk } from "@shared/utils/facebookSdk.js";
 
-// admin pages
-import Dashboard from "./ui-admin/Dashboard";
-import Orders from "./ui-admin/Orders";
-import Products from "./ui-admin/Products";
-import Customers from "./ui-admin/Customers";
-import AI from "./ui-admin/AI";
-import Revenue from "./ui-admin/Revenue";
-import Inventory from "./ui-admin/Inventory";
-import Profile from "./ui-admin/Profile";
+// Admin feature
+import {
+  AdminLayout,
+  Dashboard,
+  Orders,
+  Products,
+  Customers,
+  AI,
+  Revenue,
+  Inventory,
+  Promotions,
+  Tiers,
+  Profile,
+  FeaturedZones,
+  FeaturedZoneEditor
+} from "@admin";
 
-// auth pages
-import Login from "./ui-auth/Login";
-import Register from "./ui-auth/Register";
-import VerifyOtp from "./ui-auth/VerifyOtp";
+// Auth feature
+import { Login, VerifyOtp } from "@auth";
 
-// customer pages
-import Shop from "./ui-customer/Shop";
-
+// Shop feature
+import { Shop, CustomerProfile, Checkout, OrderSuccess, ProductDetail } from "@shop";
 
 export default function App() {
+  // Initialize Facebook SDK on mount
+  useEffect(() => {
+    initFacebookSdk();
+  }, []);
+
   return (
     <Routes>
-      {/* Customer pages (public) */}
+      {/* Default route -> Shop */}
+      <Route path="/" element={<Navigate to="/shop" replace />} />
+
+      {/* Shop pages */}
       <Route path="/shop" element={<Shop />} />
+      <Route path="/shop/product/:productId" element={<ProductDetail />} />
+      <Route path="/shop/profile" element={<CustomerProfile />} />
+      <Route path="/shop/checkout" element={<Checkout />} />
+      <Route path="/shop/order-success/:orderId" element={<OrderSuccess />} />
 
-      {/* Auth pages (no sidebar/header) */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/verify-otp" element={<VerifyOtp />} />
+      <Route path="/admin/login" element={<Login />} />
+      <Route path="/admin/verify-otp" element={<VerifyOtp />} />
 
-      {/* App pages */}
-      <Route element={<Layout />}>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/orders" element={<Orders />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/customers" element={<Customers />} />
-        <Route path="/ai" element={<AI />} />
-        <Route path="/revenue" element={<Revenue />} />
-        <Route path="/inventory" element={<Inventory />} />
-        <Route path="/profile" element={<Profile />} />
-
+      {/* Admin pages (protected) */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="orders" element={<Orders />} />
+        <Route path="products" element={<Products />} />
+        <Route path="customers" element={<Customers />} />
+        <Route path="ai" element={<AI />} />
+        <Route path="revenue" element={<Revenue />} />
+        <Route path="inventory" element={<Inventory />} />
+        <Route path="promotions" element={<Promotions />} />
+        <Route path="tiers" element={<Tiers />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="featured" element={<FeaturedZones />} />
+        <Route path="featured/:id" element={<FeaturedZoneEditor />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Legacy redirects */}
+      <Route path="/login" element={<Navigate to="/admin/login" replace />} />
+
+      {/* Catch all */}
+      <Route path="*" element={<Navigate to="/shop" replace />} />
     </Routes>
   );
 }

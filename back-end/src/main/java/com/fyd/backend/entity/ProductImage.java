@@ -14,10 +14,6 @@ public class ProductImage {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "color_id")
-    private Color color;
-
     @Column(name = "image_url", nullable = false)
     private String imageUrl;
 
@@ -38,8 +34,6 @@ public class ProductImage {
     public void setId(Long id) { this.id = id; }
     public Product getProduct() { return product; }
     public void setProduct(Product product) { this.product = product; }
-    public Color getColor() { return color; }
-    public void setColor(Color color) { this.color = color; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public String getAltText() { return altText; }

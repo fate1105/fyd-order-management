@@ -28,6 +28,9 @@ public class ProductDTO {
     private List<VariantDTO> variants;
     private List<ImageDTO> images;
     private String thumbnail;
+    private Integer initialStock;
+    private Long initialSizeId;
+    private Long initialColorId;
 
     public static ProductDTO fromEntity(Product p) {
         ProductDTO dto = new ProductDTO();
@@ -118,4 +121,10 @@ public class ProductDTO {
     public void setImages(List<ImageDTO> images) { this.images = images; }
     public String getThumbnail() { return thumbnail; }
     public void setThumbnail(String thumbnail) { this.thumbnail = thumbnail; }
+    public Integer getInitialStock() { return initialStock; }
+    public void setInitialStock(Integer initialStock) { this.initialStock = initialStock; }
+    public Long getInitialSizeId() { return initialSizeId; }
+    public void setInitialSizeId(Long initialSizeId) { this.initialSizeId = initialSizeId; }
+    public Long getInitialColorId() { return initialColorId; }
+    public void setInitialColorId(Long initialColorId) { this.initialColorId = initialColorId; }
 }

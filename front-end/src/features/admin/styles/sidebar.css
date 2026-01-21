@@ -1,0 +1,233 @@
+/* sidebar.css - Premium Dark Glassmorphism Sidebar */
+
+.sidebar {
+  width: 280px;
+  padding: 24px 16px;
+  background: var(--glass-bg);
+  border-right: 1px solid var(--admin-border);
+  backdrop-filter: blur(var(--admin-blur));
+  -webkit-backdrop-filter: blur(var(--admin-blur));
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* =====================================================
+   BRAND
+   ===================================================== */
+.brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 8px 12px;
+  margin-bottom: 32px;
+  text-decoration: none;
+  color: var(--admin-text);
+  border-radius: var(--admin-radius-md);
+  transition: all var(--admin-transition);
+}
+
+.brand:hover {
+  background: var(--glass-hover);
+}
+
+.brandMark {
+  width: 44px;
+  height: 44px;
+  background: var(--admin-accent-gradient);
+  color: #0a0a0f;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-radius: var(--admin-radius-md);
+  box-shadow: 0 4px 12px rgba(var(--admin-accent-rgb), 0.3);
+}
+
+.brandName {
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.5px;
+  color: var(--admin-text);
+}
+
+.brandSub {
+  font-size: 11px;
+  color: var(--admin-text-muted-2);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+/* =====================================================
+   NAV GROUPS
+   ===================================================== */
+.navGroupTitle {
+  margin: 24px 12px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--admin-text-muted-2);
+  text-transform: uppercase;
+}
+
+.navGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* =====================================================
+   NAV ITEMS
+   ===================================================== */
+.navItem {
+  width: 100%;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--admin-text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all var(--admin-transition);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  position: relative;
+}
+
+.navItem:hover {
+  background: var(--glass-hover);
+  color: var(--admin-text);
+}
+
+.navItem.active {
+  background: var(--admin-accent-gradient);
+  color: #0a0a0f;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(var(--admin-accent-rgb), 0.25);
+}
+
+/* Active indicator line */
+.navItem.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: #0a0a0f;
+  border-radius: 0 2px 2px 0;
+  opacity: 0;
+}
+
+.navIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.navIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.navLabel {
+  flex: 1;
+}
+
+.navBadge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  background: var(--admin-error);
+  color: white;
+  border-radius: var(--admin-radius-full);
+  letter-spacing: 0.3px;
+}
+
+/* =====================================================
+   SIDEBAR FOOTER
+   ===================================================== */
+.sidebarFooter {
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+.back-shop-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  text-decoration: none;
+  border-top: 1px solid var(--admin-border);
+  transition: all var(--admin-transition);
+  border-radius: var(--admin-radius-md);
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.back-shop-btn:hover {
+  background: var(--glass-hover);
+  color: var(--admin-accent);
+}
+
+.back-shop-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* =====================================================
+   SCROLLBAR
+   ===================================================== */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--admin-border);
+  border-radius: var(--admin-radius-full);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--admin-border-hover);
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 240px;
+    padding: 20px 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform var(--admin-transition-slow);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}

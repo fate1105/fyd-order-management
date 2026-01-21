@@ -25,6 +25,9 @@ public class OrderDTO {
     private String paymentMethod;
     private String paymentStatus;
     private String note;
+    private String promotionCode;
+    private Integer pointsUsed;
+    private Integer pointsEarned;
     private LocalDateTime createdAt;
     private List<OrderItemDTO> items;
 
@@ -51,6 +54,9 @@ public class OrderDTO {
         dto.setPaymentMethod(o.getPaymentMethod());
         dto.setPaymentStatus(o.getPaymentStatus());
         dto.setNote(o.getNotes());
+        dto.setPromotionCode(o.getPromotionCode());
+        dto.setPointsUsed(o.getPointsUsed());
+        dto.setPointsEarned(o.getPointsEarned());
         dto.setCreatedAt(o.getCreatedAt());
         
         if (o.getCustomer() != null) {
@@ -107,4 +113,10 @@ public class OrderDTO {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public List<OrderItemDTO> getItems() { return items; }
     public void setItems(List<OrderItemDTO> items) { this.items = items; }
+    public String getPromotionCode() { return promotionCode; }
+    public void setPromotionCode(String promotionCode) { this.promotionCode = promotionCode; }
+    public Integer getPointsUsed() { return pointsUsed; }
+    public void setPointsUsed(Integer pointsUsed) { this.pointsUsed = pointsUsed; }
+    public Integer getPointsEarned() { return pointsEarned; }
+    public void setPointsEarned(Integer pointsEarned) { this.pointsEarned = pointsEarned; }
 }

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,63 +28,97 @@ public class InventoryController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> getInventory(
             @RequestParam(defaultValue = "") String q,
-            @RequestParam(defaultValue = "all") String filter) {
+            @RequestParam(defaultValue = "all") String filter,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long sizeId,
+            @RequestParam(defaultValue = "stockAsc") String sort) {
         
-        List<Product> products = productRepository.findAll();
+        List<ProductVariant> variants = variantRepository.findAll();
         
-        // Filter by search query
+        // Calculate counts for the original total variants before q/filter/categoryId
+        long lowCount = variants.stream().filter(v -> v.getStockQuantity() > 0 && v.getStockQuantity() <= 6).count();
+        long outCount = variants.stream().filter(v -> v.getStockQuantity() <= 0).count();
+        int totalOriginal = variants.size();
+
+        // 1. Filter by search query (q)
         if (!q.isEmpty()) {
             String query = q.toLowerCase();
-            products = products.stream()
-                .filter(p -> p.getSku().toLowerCase().contains(query) 
-                    || p.getName().toLowerCase().contains(query)
-                    || (p.getCategory() != null && p.getCategory().getName().toLowerCase().contains(query)))
+            variants = variants.stream()
+                .filter(v -> v.getSkuVariant().toLowerCase().contains(query) 
+                    || v.getProduct().getName().toLowerCase().contains(query)
+                    || (v.getProduct().getCategory() != null && v.getProduct().getCategory().getName().toLowerCase().contains(query)))
+                .collect(Collectors.toList());
+        }
+
+        // 2. Filter by category
+        if (categoryId != null) {
+            variants = variants.stream()
+                .filter(v -> v.getProduct().getCategory() != null && v.getProduct().getCategory().getId().equals(categoryId))
+                .collect(Collectors.toList());
+        }
+
+        // 3. Filter by size
+        if (sizeId != null) {
+            variants = variants.stream()
+                .filter(v -> v.getSize() != null && v.getSize().getId().equals(sizeId))
                 .collect(Collectors.toList());
         }
         
-        // Calculate stock for each product
-        List<Map<String, Object>> items = new ArrayList<>();
-        int lowCount = 0;
-        int outCount = 0;
-        
-        for (Product p : products) {
-            Integer totalStock = variantRepository.getTotalStockByProduct(p.getId());
-            if (totalStock == null) totalStock = 0;
-            
-            String stockStatus;
-            if (totalStock <= 0) {
-                stockStatus = "out";
-                outCount++;
-            } else if (totalStock <= 6) {
-                stockStatus = "low";
-                lowCount++;
-            } else {
-                stockStatus = "ok";
-            }
-            
-            // Apply filter
-            if (filter.equals("low") && !stockStatus.equals("low")) continue;
-            if (filter.equals("out") && !stockStatus.equals("out")) continue;
-            
-            Map<String, Object> item = new HashMap<>();
-            item.put("id", p.getId());
-            item.put("sku", p.getSku());
-            item.put("name", p.getName());
-            item.put("category", p.getCategory() != null ? p.getCategory().getName() : null);
-            item.put("price", p.getSalePrice() != null ? p.getSalePrice() : p.getBasePrice());
-            item.put("stock", totalStock);
-            item.put("stockStatus", stockStatus);
-            items.add(item);
+        // 4. Filter by status (low/out)
+        if (filter.equals("low")) {
+            variants = variants.stream()
+                .filter(v -> v.getStockQuantity() > 0 && v.getStockQuantity() <= 6)
+                .collect(Collectors.toList());
+        } else if (filter.equals("out")) {
+            variants = variants.stream()
+                .filter(v -> v.getStockQuantity() <= 0)
+                .collect(Collectors.toList());
         }
-        
-        // Sort by stock ascending (lowest first)
-        items.sort(Comparator.comparingInt(a -> (Integer) a.get("stock")));
+
+        // 4. Map to DTO-like maps
+        List<Map<String, Object>> items = variants.stream().map(v -> {
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", v.getId());
+            item.put("sku", v.getSkuVariant() != null ? v.getSkuVariant() : v.getId().toString());
+            
+            String sizeName = v.getSize() != null ? v.getSize().getName() : "-";
+            String colorName = v.getColor() != null ? v.getColor().getName() : "-";
+            String fullName = v.getProduct().getName() + " - " + sizeName + " / " + colorName;
+            
+            item.put("name", fullName);
+            item.put("category", v.getProduct().getCategory() != null ? v.getProduct().getCategory().getName() : "N/A");
+            item.put("price", v.getProduct().getSalePrice() != null ? v.getProduct().getSalePrice() : v.getProduct().getBasePrice());
+            
+            int stock = v.getStockQuantity() != null ? v.getStockQuantity() : 0;
+            item.put("stock", stock);
+            
+            String stockStatus = stock <= 0 ? "out" : (stock <= 6 ? "low" : "ok");
+            item.put("stockStatus", stockStatus);
+            return item;
+        }).collect(Collectors.toList());
+
+        // 5. Apply sorting
+        switch (sort) {
+            case "stockDesc":
+                items.sort((a, b) -> ((Integer) b.get("stock")).compareTo((Integer) a.get("stock")));
+                break;
+            case "priceAsc":
+                items.sort((a, b) -> ((BigDecimal) a.get("price")).compareTo((BigDecimal) b.get("price")));
+                break;
+            case "priceDesc":
+                items.sort((a, b) -> ((BigDecimal) b.get("price")).compareTo((BigDecimal) a.get("price")));
+                break;
+            case "stockAsc":
+            default:
+                items.sort((a, b) -> ((Integer) a.get("stock")).compareTo((Integer) b.get("stock")));
+                break;
+        }
         
         Map<String, Object> response = new HashMap<>();
         response.put("items", items);
-        response.put("total", products.size());
-        response.put("lowCount", lowCount);
-        response.put("outCount", outCount);
+        response.put("total", totalOriginal);
+        response.put("lowCount", (int) lowCount);
+        response.put("outCount", (int) outCount);
         
         return ResponseEntity.ok(response);
     }
@@ -111,6 +146,19 @@ public class InventoryController {
         return variantRepository.findById(id)
             .map(variant -> {
                 variant.setStockQuantity(Math.max(0, variant.getStockQuantity() + quantity));
+                ProductVariant saved = variantRepository.save(variant);
+                return ResponseEntity.ok(VariantDTO.fromEntity(saved));
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/variant/{id}/stock")
+    public ResponseEntity<VariantDTO> setVariantStock(
+            @PathVariable Long id,
+            @RequestParam int stock) {
+        return variantRepository.findById(id)
+            .map(variant -> {
+                variant.setStockQuantity(Math.max(0, stock));
                 ProductVariant saved = variantRepository.save(variant);
                 return ResponseEntity.ok(VariantDTO.fromEntity(saved));
             })

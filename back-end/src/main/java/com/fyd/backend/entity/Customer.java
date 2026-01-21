@@ -46,6 +46,9 @@ public class Customer {
     @Column
     private Integer points = 0;
 
+    @Column(name = "total_points")
+    private Integer totalPoints = 0;
+
     @Column(length = 20)
     private String status = "ACTIVE";
 
@@ -86,6 +89,8 @@ public class Customer {
     public void setTotalOrders(Integer totalOrders) { this.totalOrders = totalOrders; }
     public Integer getPoints() { return points; }
     public void setPoints(Integer points) { this.points = points; }
+    public Integer getTotalPoints() { return totalPoints; }
+    public void setTotalPoints(Integer totalPoints) { this.totalPoints = totalPoints; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }

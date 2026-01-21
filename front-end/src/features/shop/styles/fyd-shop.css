@@ -1,0 +1,2571 @@
+/* ============================================================================
+   FYD SHOP - ADIDAS-INSPIRED THEME
+   Clean, minimal, black & white design with bold typography
+   ============================================================================ */
+
+/* CSS Variables */
+:root {
+  --shop-black: #000000;
+  --shop-white: #ffffff;
+  --shop-gray-50: #fafafa;
+  --shop-gray-100: #f5f5f5;
+  --shop-gray-200: #ebebeb;
+  --shop-gray-300: #d4d4d4;
+  --shop-gray-400: #767677;
+  --shop-gray-500: #505050;
+  --shop-gray-600: #363738;
+  --shop-sale: #ee3124;
+  --shop-success: #2d6a4f;
+  --shop-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --shop-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --shop-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shop-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shop-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--shop-gray-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--shop-gray-400);
+  border-radius: 10px;
+  border: 2px solid var(--shop-gray-100);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--shop-black);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--shop-gray-400) var(--shop-gray-100);
+}
+
+/* ============================================================================
+   GLOBAL SHOP STYLES
+   ============================================================================ */
+
+.shop-page {
+  min-height: 100vh;
+  background: var(--shop-white);
+  color: var(--shop-black);
+  font-family: var(--shop-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ============================================================================
+   HEADER - ADIDAS STYLE
+   ============================================================================ */
+
+.adidas-header {
+  background: var(--shop-white);
+  color: var(--shop-black);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--shop-gray-200);
+}
+
+.adidas-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 48px;
+  height: 64px;
+  max-width: 1920px;
+  margin: 0 auto;
+}
+
+.adidas-header-left {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+}
+
+.adidas-logo {
+  text-decoration: none;
+  color: var(--shop-black);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: opacity var(--shop-transition);
+}
+
+.adidas-logo:hover {
+  opacity: 0.7;
+}
+
+.adidas-logo .logo-text {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+
+.adidas-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 64px;
+}
+
+.adidas-nav-item {
+  background: none;
+  border: none;
+  color: var(--shop-black);
+  font-size: 12px;
+  font-weight: 700;
+  /* text-transform removed - causes Vietnamese accent issues */
+  letter-spacing: 2px;
+  padding: 0 20px;
+  height: 100%;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--shop-transition);
+  border-bottom: 3px solid transparent;
+}
+
+.adidas-nav-item:hover {
+  background: var(--shop-gray-50);
+}
+
+.adidas-nav-item.active {
+  border-bottom-color: var(--shop-black);
+}
+
+.adidas-nav-item.sale {
+  color: var(--shop-sale);
+}
+
+.adidas-nav-item .dropdown-arrow {
+  transition: transform var(--shop-transition);
+  font-size: 10px;
+}
+
+.adidas-nav-item.active .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown {
+  position: relative;
+  height: 64px;
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--shop-white);
+  color: var(--shop-black);
+  min-width: 220px;
+  box-shadow: var(--shop-shadow-lg);
+  z-index: 100;
+  border-top: 2px solid var(--shop-black);
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--shop-black);
+  cursor: pointer;
+  transition: all var(--shop-transition);
+  border-left: 3px solid transparent;
+}
+
+.dropdown-item:hover {
+  background: var(--shop-gray-50);
+  border-left-color: var(--shop-black);
+  padding-left: 28px;
+}
+
+.dropdown-item.all {
+  font-weight: 700;
+  border-bottom: 1px solid var(--shop-gray-200);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+}
+
+.adidas-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.adidas-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.adidas-search input {
+  background: var(--shop-gray-100);
+  border: 1px solid transparent;
+  color: var(--shop-black);
+  padding: 11px 44px 11px 18px;
+  font-size: 14px;
+  width: 200px;
+  border-radius: 4px;
+  transition: all var(--shop-transition);
+}
+
+.adidas-search input:focus {
+  outline: none;
+  width: 280px;
+  background: var(--shop-white);
+  border-color: var(--shop-black);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.adidas-search input::placeholder {
+  color: var(--shop-gray-400);
+}
+
+.adidas-search svg {
+  position: absolute;
+  right: 14px;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  stroke: var(--shop-gray-400);
+  transition: stroke var(--shop-transition);
+}
+
+.adidas-search input:focus+svg {
+  stroke: var(--shop-black);
+}
+
+.adidas-icon-btn {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  background: none;
+  border: none;
+  color: var(--shop-black);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--shop-transition);
+  border-radius: 4px;
+}
+
+.adidas-icon-btn:hover {
+  background: var(--shop-gray-100);
+}
+
+.adidas-icon-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.cart-count {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--shop-sale);
+  color: var(--shop-white);
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* User dropdown */
+.user-dropdown {
+  position: relative;
+}
+
+.user-avatar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--shop-gray-200);
+  border: 2px solid transparent;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--shop-transition);
+}
+
+.user-avatar-btn:hover,
+.user-avatar-btn.active {
+  border-color: var(--shop-black);
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-avatar-initials {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--shop-black);
+}
+
+.user-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 2px);
+  /* Tighten up */
+  right: 0;
+  background: var(--shop-white);
+  color: var(--shop-black);
+  min-width: 240px;
+  box-shadow: var(--shop-shadow-lg);
+  z-index: 100;
+  border: 2px solid var(--shop-black);
+  /* Bold Adidas border */
+  animation: fadeInDown 0.2s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-dropdown-header {
+  padding: 20px 16px;
+  background: var(--shop-gray-100);
+  border-bottom: 2px solid var(--shop-black);
+}
+
+.user-name {
+  display: block;
+  font-weight: 900;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-email {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--shop-gray-500);
+  margin-top: 4px;
+}
+
+.user-dropdown-divider {
+  height: 0;
+  border-bottom: 1px solid var(--shop-gray-200);
+}
+
+.user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--shop-black);
+  cursor: pointer;
+  transition: all var(--shop-transition);
+  border-left: 4px solid transparent;
+}
+
+.user-dropdown-item:hover {
+  background: var(--shop-gray-100);
+  border-left-color: var(--shop-black);
+}
+
+.user-dropdown-item svg {
+  stroke-width: 2.5px;
+  width: 18px;
+  height: 18px;
+}
+
+/* ============================================================================
+   HERO BANNER
+   ============================================================================ */
+
+.hero-banner {
+  position: relative;
+  height: 75vh;
+  min-height: 550px;
+  max-height: 850px;
+  overflow: hidden;
+  background: var(--shop-black);
+}
+
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-slide.active {
+  opacity: 1;
+}
+
+.hero-slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
+}
+
+.hero-slide.light::before {
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+}
+
+.hero-content {
+  position: absolute;
+  left: 80px;
+  bottom: 100px;
+  color: var(--shop-white);
+  z-index: 10;
+  max-width: 600px;
+  pointer-events: auto;
+}
+
+.hero-slide.light .hero-content {
+  color: var(--shop-black);
+}
+
+.hero-subtitle {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  opacity: 0.9;
+}
+
+.hero-title {
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+  letter-spacing: -2px;
+}
+
+.hero-cta {
+  display: inline-block;
+  padding: 18px 40px;
+  background: var(--shop-white);
+  color: var(--shop-black);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  border: none;
+  cursor: pointer;
+  transition: all var(--shop-transition);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.hero-slide.light .hero-cta {
+  background: var(--shop-black);
+  color: var(--shop-white);
+}
+
+.hero-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.hero-dots {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  z-index: 2;
+}
+
+.hero-dot {
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all var(--shop-transition);
+}
+
+.hero-dot.active,
+.hero-dot:hover {
+  background: var(--shop-white);
+  border-color: var(--shop-white);
+  transform: scale(1.2);
+}
+
+/* ============================================================================
+   CATEGORY STRIP
+   ============================================================================ */
+
+.category-strip {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  background: var(--shop-gray-100);
+  border-bottom: 1px solid var(--shop-gray-200);
+}
+
+.category-strip-item {
+  padding: 16px 32px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--shop-gray-400);
+  cursor: pointer;
+  position: relative;
+  transition: color var(--shop-transition);
+}
+
+.category-strip-item:hover,
+.category-strip-item.active {
+  color: var(--shop-black);
+}
+
+.category-strip-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--shop-black);
+}
+
+/* ============================================================================
+   PRODUCTS SECTION
+   ============================================================================ */
+
+.products-section {
+  max-width: 1920px;
+  margin: 0 auto;
+  padding: 48px 48px 80px;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--shop-black);
+}
+
+.section-title {
+  font-size: 28px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.products-count {
+  font-size: 13px;
+  color: var(--shop-gray-400);
+  font-weight: 500;
+  margin-top: 8px;
+  display: block;
+}
+
+.filter-sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.filter-btn,
+.sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: var(--shop-white);
+  border: 2px solid var(--shop-black);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: all var(--shop-transition);
+}
+
+.filter-btn:hover,
+.sort-btn:hover {
+  background: var(--shop-black);
+  color: var(--shop-white);
+}
+
+.filter-btn svg,
+.sort-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ============================================================================
+   PRODUCT GRID
+   ============================================================================ */
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  background: var(--shop-gray-200);
+  border: 2px solid var(--shop-gray-200);
+}
+
+@media (max-width: 1400px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+    gap: 1px;
+  }
+}
+
+/* ============================================================================
+   PRODUCT CARD - ADIDAS STYLE
+   ============================================================================ */
+
+.product-card {
+  background: var(--shop-white);
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--shop-transition), box-shadow var(--shop-transition);
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shop-shadow-md);
+  z-index: 1;
+}
+
+.product-card.out-of-stock {
+  opacity: 0.6;
+}
+
+.product-image-wrapper {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--shop-gray-50);
+}
+
+.product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.product-card:hover .product-image {
+  transform: scale(1.05);
+}
+
+.product-badges {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2;
+}
+
+.badge {
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  box-shadow: var(--shop-shadow-sm);
+}
+
+.badge.sale {
+  background: var(--shop-sale);
+  color: var(--shop-white);
+}
+
+.badge.new {
+  background: var(--shop-black);
+  color: var(--shop-white);
+}
+
+.wishlist-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  background: var(--shop-white);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all var(--shop-transition);
+  box-shadow: var(--shop-shadow-sm);
+  z-index: 2;
+}
+
+.product-card:hover .wishlist-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.wishlist-btn.active {
+  opacity: 1;
+  transform: scale(1);
+  background: var(--shop-sale);
+}
+
+.wishlist-btn svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2;
+}
+
+.wishlist-btn.active svg {
+  fill: var(--shop-white);
+  stroke: var(--shop-white);
+}
+
+.quick-add-btn {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: var(--shop-black);
+  color: var(--shop-white);
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.product-card:hover .quick-add-btn.visible {
+  transform: translateY(0);
+}
+
+.quick-add-btn:hover {
+  background: var(--shop-gray-600);
+}
+
+/* Product Info */
+.product-info {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.product-colors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--shop-gray-300);
+  transition: transform var(--shop-transition);
+}
+
+.color-dot:hover {
+  transform: scale(1.15);
+  border-color: var(--shop-black);
+}
+
+.more-colors {
+  font-size: 11px;
+  color: var(--shop-gray-400);
+  font-weight: 500;
+}
+
+.product-name {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--shop-black);
+}
+
+.product-category {
+  font-size: 12px;
+  color: var(--shop-gray-400);
+  /* text-transform removed - causes Vietnamese accent issues */
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.product-price {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.current-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--shop-black);
+}
+
+.current-price.sale {
+  color: var(--shop-sale);
+}
+
+.original-price {
+  font-size: 14px;
+  color: var(--shop-gray-400);
+  text-decoration: line-through;
+  font-weight: 500;
+}
+
+/* ============================================================================
+   FOOTER
+   ============================================================================ */
+
+.shop-footer {
+  background: var(--shop-black);
+  color: var(--shop-white);
+  padding: 60px 40px 30px;
+  margin-top: 60px;
+}
+
+.footer-content {
+  max-width: 1920px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px;
+}
+
+.footer-section h4 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-links li {
+  margin-bottom: 12px;
+}
+
+.footer-links a {
+  color: var(--shop-gray-300);
+  text-decoration: none;
+  font-size: 13px;
+  transition: color var(--shop-transition);
+}
+
+.footer-links a:hover {
+  color: var(--shop-white);
+}
+
+.footer-bottom {
+  max-width: 1920px;
+  margin: 40px auto 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--shop-gray-500);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-copyright {
+  font-size: 12px;
+  color: var(--shop-gray-400);
+}
+
+.footer-social {
+  display: flex;
+  gap: 16px;
+}
+
+.footer-social a {
+  color: var(--shop-white);
+  transition: opacity var(--shop-transition);
+}
+
+.footer-social a:hover {
+  opacity: 0.7;
+}
+
+/* ============================================================================
+   CART DRAWER - ADIDAS STYLE
+   ============================================================================ */
+
+.cart-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1100;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.cart-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  max-width: 100vw;
+  height: 100vh;
+  background: var(--shop-white);
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.cart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid var(--shop-gray-200);
+}
+
+.cart-title {
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.cart-close {
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cart-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.cart-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--shop-gray-400);
+}
+
+.cart-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.cart-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--shop-gray-200);
+}
+
+.cart-item-image {
+  width: 100px;
+  height: 100px;
+  background: var(--shop-gray-100);
+  flex-shrink: 0;
+}
+
+.cart-item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cart-item-details {
+  flex: 1;
+}
+
+.cart-item-name {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.cart-item-variant {
+  font-size: 12px;
+  color: var(--shop-gray-400);
+  margin-bottom: 8px;
+}
+
+.cart-item-price {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.cart-item-qty {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--shop-gray-100);
+  border-radius: 100px;
+  padding: 2px;
+  width: fit-content;
+}
+
+.qty-btn {
+  width: 28px;
+  height: 28px;
+  background: var(--shop-white);
+  border: none;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--shop-gray-500);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.qty-btn:hover {
+  background: var(--shop-black);
+  color: var(--shop-white);
+  transform: scale(1.05);
+}
+
+.qty-btn:active {
+  transform: scale(0.95);
+}
+
+.qty-value {
+  min-width: 36px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--shop-black);
+  padding: 0 4px;
+}
+
+.cart-item-remove {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--shop-gray-400);
+  text-decoration: underline;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.cart-item-remove:hover {
+  color: var(--shop-black);
+}
+
+.cart-footer {
+  padding: 20px;
+  border-top: 1px solid var(--shop-gray-200);
+}
+
+.cart-subtotal {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.cart-subtotal-label {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cart-subtotal-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.cart-checkout-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--shop-black);
+  color: var(--shop-white);
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: background var(--shop-transition);
+}
+
+.cart-checkout-btn:hover {
+  background: var(--shop-gray-500);
+}
+
+/* ============================================================================
+   WISHLIST DRAWER
+   ============================================================================ */
+
+.wishlist-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  max-width: 100vw;
+  height: 100vh;
+  background: var(--shop-white);
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease;
+}
+
+/* ============================================================================
+   QUICK VIEW MODAL - ADIDAS STYLE
+   ============================================================================ */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1100;
+}
+
+.quick-view-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--shop-white);
+  max-width: 1000px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 1200;
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  background: var(--shop-white);
+  border: 1px solid var(--shop-black);
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 10;
+  transition: background var(--shop-transition);
+}
+
+.modal-close:hover {
+  background: var(--shop-gray-100);
+}
+
+.modal-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.modal-gallery {
+  background: var(--shop-gray-100);
+}
+
+.gallery-main {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gallery-main img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.gallery-thumbs {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+}
+
+.gallery-thumbs .thumb {
+  width: 60px;
+  height: 60px;
+  border: 2px solid transparent;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.gallery-thumbs .thumb.active {
+  border-color: var(--shop-black);
+}
+
+.gallery-thumbs .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modal-details {
+  padding: 40px;
+}
+
+.modal-category {
+  font-size: 12px;
+  color: var(--shop-gray-400);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.modal-title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 16px;
+}
+
+.modal-price {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.modal-price .price-current {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.modal-price .price-original {
+  font-size: 16px;
+  color: var(--shop-gray-400);
+  text-decoration: line-through;
+}
+
+.modal-description {
+  font-size: 14px;
+  color: var(--shop-gray-500);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.modal-option {
+  margin-bottom: 20px;
+}
+
+.modal-option label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.color-options {
+  display: flex;
+  gap: 8px;
+}
+
+.color-option {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color var(--shop-transition);
+}
+
+.color-option:hover,
+.color-option.selected {
+  border-color: var(--shop-black);
+}
+
+.size-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.size-option {
+  min-width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--shop-black);
+  background: var(--shop-white);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--shop-transition), color var(--shop-transition);
+}
+
+.size-option:hover:not(.unavailable),
+.size-option.selected {
+  background: var(--shop-black);
+  color: var(--shop-white);
+}
+
+.size-option.unavailable {
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.quantity-selector {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  margin-right: 16px;
+}
+
+.quantity-selector button {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background var(--shop-transition);
+}
+
+.quantity-selector button:hover {
+  background: var(--shop-gray-100);
+}
+
+.quantity-selector span {
+  width: 40px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.stock-info {
+  font-size: 13px;
+  color: var(--shop-gray-400);
+}
+
+.modal-add-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--shop-black);
+  color: var(--shop-white);
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  margin-top: 24px;
+  transition: background var(--shop-transition);
+}
+
+.modal-add-btn:hover:not(:disabled) {
+  background: var(--shop-gray-500);
+}
+
+.modal-add-btn:disabled {
+  background: var(--shop-gray-300);
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   SORT DROPDOWN
+   ============================================================================ */
+
+.sort-dropdown {
+  position: relative;
+}
+
+.sort-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--shop-white);
+  border: 1px solid var(--shop-black);
+  min-width: 200px;
+  z-index: 50;
+}
+
+.sort-option {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--shop-transition);
+}
+
+.sort-option:hover,
+.sort-option.active {
+  background: var(--shop-gray-100);
+}
+
+.sort-option.active {
+  font-weight: 700;
+}
+
+@media (max-width: 1024px) {
+  .adidas-header-top {
+    padding: 0 24px;
+    height: 56px;
+  }
+
+  .adidas-header-left {
+    gap: 24px;
+  }
+
+  .adidas-logo .logo-text {
+    font-size: 28px;
+  }
+
+  .adidas-nav {
+    display: none;
+  }
+
+  .hero-banner {
+    height: 65vh;
+    min-height: 450px;
+  }
+
+  .hero-content {
+    left: 40px;
+    bottom: 60px;
+  }
+
+  .hero-title {
+    font-size: 48px;
+  }
+
+  .products-section {
+    padding: 32px 24px 60px;
+  }
+
+  .section-header {
+    margin-bottom: 32px;
+  }
+
+  .section-title {
+    font-size: 24px;
+  }
+
+  .footer-content {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .adidas-header-top {
+    padding: 0 16px;
+    height: 52px;
+  }
+
+  .adidas-header-left {
+    gap: 16px;
+  }
+
+  .adidas-logo .logo-text {
+    font-size: 24px;
+  }
+
+  .adidas-search input {
+    width: 0;
+    padding: 0;
+  }
+
+  .adidas-search input:focus {
+    width: 160px;
+    padding: 10px 40px 10px 16px;
+  }
+
+  .adidas-icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .adidas-icon-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .hero-banner {
+    height: 60vh;
+    min-height: 400px;
+  }
+
+  .hero-content {
+    left: 20px;
+    right: 20px;
+    bottom: 40px;
+  }
+
+  .hero-subtitle {
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+
+  .hero-title {
+    font-size: 32px;
+    letter-spacing: -1px;
+  }
+
+  .hero-cta {
+    padding: 14px 28px;
+    font-size: 11px;
+  }
+
+  .products-section {
+    padding: 24px 16px 48px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+
+  .filter-sort-bar {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .filter-btn,
+  .sort-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 16px;
+    font-size: 11px;
+  }
+
+  .product-info {
+    padding: 16px;
+  }
+
+  .product-name {
+    font-size: 14px;
+  }
+
+  .current-price {
+    font-size: 15px;
+  }
+
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .cart-drawer,
+  .wishlist-drawer {
+    width: 100vw;
+  }
+
+  .quick-view-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .modal-content {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-details {
+    padding: 24px;
+  }
+}
+
+/* ============================================================================
+   LOADING & EMPTY STATES
+   ============================================================================ */
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--shop-gray-200);
+  border-top-color: var(--shop-black);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--shop-gray-400);
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state-text {
+  font-size: 16px;
+}
+
+/* ============================================================================
+   WHAT'S HOT SECTION
+   ============================================================================ */
+
+.whats-hot-section {
+  padding: 60px 40px;
+  background: var(--shop-gray-100);
+}
+
+.whats-hot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  max-width: 1920px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+  .whats-hot-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .whats-hot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .whats-hot-section {
+    padding: 40px 20px;
+  }
+}
+
+/* ============================================================================
+   PAGINATION
+   ============================================================================ */
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 0;
+}
+
+.pagination-btn {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--shop-white);
+  border: 1px solid var(--shop-black);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--shop-transition), color var(--shop-transition);
+}
+
+.pagination-btn:hover,
+.pagination-btn.active {
+  background: var(--shop-black);
+  color: var(--shop-white);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   SORT DROPDOWN
+   ============================================================================ */
+
+.sort-dropdown {
+  position: relative;
+}
+
+.sort-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--shop-white);
+  border: 1px solid var(--shop-black);
+  min-width: 200px;
+  z-index: 50;
+}
+
+.sort-option {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--shop-transition);
+}
+
+.sort-option:hover,
+.sort-option.active {
+  background: var(--shop-gray-100);
+}
+
+.sort-option.active {
+  font-weight: 700;
+}
+
+/* ============================================================================
+   FILTER TOGGLE BUTTON
+   ============================================================================ */
+
+.filter-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: var(--shop-white);
+  border: 2px solid var(--shop-black);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: all var(--shop-transition);
+}
+
+.filter-toggle-btn:hover,
+.filter-toggle-btn.active {
+  background: var(--shop-black);
+  color: var(--shop-white);
+}
+
+.filter-toggle-btn.active svg {
+  stroke: var(--shop-white);
+}
+
+/* ============================================================================
+   PRODUCTS LAYOUT (SIDEBAR + GRID)
+   ============================================================================ */
+
+.products-layout {
+  display: flex;
+  gap: 48px;
+  margin-top: 32px;
+}
+
+.products-layout.with-sidebar {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+}
+
+.products-area {
+  flex: 1;
+  min-width: 0;
+}
+
+.products-layout.with-sidebar .product-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 1400px) {
+  .products-layout.with-sidebar .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .products-layout.with-sidebar {
+    grid-template-columns: 240px 1fr;
+    gap: 32px;
+  }
+
+  .products-layout.with-sidebar .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .products-layout.with-sidebar {
+    display: block;
+  }
+
+  .filter-sidebar {
+    margin-bottom: 24px;
+  }
+}
+
+/* ============================================================================
+   FILTER SIDEBAR - ADIDAS STYLE
+   ============================================================================ */
+
+.filter-sidebar {
+  width: 100%;
+  background: var(--shop-white);
+  border: 1px solid var(--shop-gray-200);
+  position: sticky;
+  top: 80px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 2px solid var(--shop-black);
+}
+
+.filter-header h3 {
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+.clear-filters {
+  background: none;
+  border: none;
+  color: var(--shop-gray-400);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color var(--shop-transition);
+}
+
+.clear-filters:hover {
+  color: var(--shop-black);
+}
+
+.filter-section {
+  border-bottom: 1px solid var(--shop-gray-200);
+}
+
+.filter-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 18px 20px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background var(--shop-transition);
+}
+
+.filter-section-header:hover {
+  background: var(--shop-gray-50);
+}
+
+.filter-arrow {
+  font-size: 10px;
+  transition: transform var(--shop-transition);
+}
+
+.filter-arrow.open {
+  transform: rotate(180deg);
+}
+
+/* Categories */
+.filter-categories {
+  padding: 0 20px 16px;
+}
+
+.category-item {
+  display: block;
+  width: 100%;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 14px;
+  color: var(--shop-gray-500);
+  cursor: pointer;
+  transition: all var(--shop-transition);
+  border-left: 2px solid transparent;
+  padding-left: 12px;
+  margin-left: -12px;
+}
+
+.category-item:hover {
+  color: var(--shop-black);
+}
+
+.category-item.active {
+  color: var(--shop-black);
+  font-weight: 700;
+  border-left-color: var(--shop-black);
+}
+
+.category-item.parent {
+  font-weight: 600;
+}
+
+.category-item.child {
+  padding-left: 24px;
+  margin-left: 0;
+  font-size: 13px;
+}
+
+.category-group {
+  margin-bottom: 4px;
+}
+
+.category-parent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.category-expand {
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: 1px solid var(--shop-gray-200);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--shop-transition);
+}
+
+.category-expand:hover {
+  background: var(--shop-gray-100);
+  border-color: var(--shop-black);
+}
+
+.category-children {
+  padding-left: 16px;
+  margin-top: 4px;
+}
+
+/* Colors */
+.filter-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 20px 20px;
+}
+
+.color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--shop-gray-200);
+  cursor: pointer;
+  transition: all var(--shop-transition);
+  position: relative;
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+  border-color: var(--shop-black);
+}
+
+.color-swatch.selected {
+  border-color: var(--shop-black);
+  box-shadow: 0 0 0 2px var(--shop-white), 0 0 0 4px var(--shop-black);
+}
+
+/* Sizes */
+.filter-sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 20px 20px;
+}
+
+.size-btn {
+  min-width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  background: var(--shop-white);
+  border: 1px solid var(--shop-gray-200);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--shop-transition);
+}
+
+.size-btn:hover {
+  border-color: var(--shop-black);
+}
+
+.size-btn.selected {
+  background: var(--shop-black);
+  color: var(--shop-white);
+  border-color: var(--shop-black);
+}
+
+/* Price */
+.filter-price {
+  padding: 0 20px 20px;
+}
+
+.price-inputs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.price-inputs input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid var(--shop-gray-200);
+  font-size: 14px;
+  min-width: 0;
+}
+
+.price-inputs input:focus {
+  outline: none;
+  border-color: var(--shop-black);
+}
+
+.price-inputs span {
+  color: var(--shop-gray-400);
+}
+
+.price-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.price-presets button {
+  padding: 8px 14px;
+  background: var(--shop-gray-100);
+  border: 1px solid var(--shop-gray-200);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--shop-transition);
+}
+
+.price-presets button:hover {
+  background: var(--shop-gray-200);
+  border-color: var(--shop-black);
+}
+
+/* ============================================================================
+   PRODUCT THUMBNAILS
+   ============================================================================ */
+
+.product-thumbnails {
+  display: flex;
+  gap: 6px;
+  padding: 12px;
+  padding-top: 0;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.product-card:hover .product-thumbnails {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.product-thumbnail {
+  width: 48px;
+  height: 48px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color var(--shop-transition);
+}
+
+.product-thumbnail:hover,
+.product-thumbnail.active {
+  border-color: var(--shop-black);
+}
+
+.product-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.more-thumbnails {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--shop-gray-100);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--shop-gray-500);
+}
+
+/* ============================================================================
+   FEATURED PRODUCTS SECTION - WHAT'S HOT
+   ============================================================================ */
+
+.featured-section {
+  max-width: 1920px;
+  margin: 0 auto;
+  padding: 48px 48px 0;
+}
+
+.featured-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.featured-title {
+  font-size: 28px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.featured-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-arrow {
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--shop-black);
+  background: var(--shop-white);
+  color: var(--shop-black);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--shop-transition);
+}
+
+.nav-arrow:hover:not(.disabled) {
+  background: var(--shop-black);
+  color: var(--shop-white);
+}
+
+.nav-arrow.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.featured-carousel-container {
+  position: relative;
+  padding: 0 60px;
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  width: 52px;
+  height: 52px;
+  border: 2px solid var(--shop-black);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--shop-black);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--shop-transition);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-arrow:hover:not(.disabled) {
+  background: var(--shop-black);
+  color: var(--shop-white);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+.carousel-arrow.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+  border-color: var(--shop-gray-300);
+}
+
+.carousel-arrow-left {
+  left: 0;
+}
+
+.carousel-arrow-right {
+  right: 0;
+}
+
+.carousel-arrow svg {
+  stroke: currentColor;
+  stroke-width: 2.5px;
+}
+
+.featured-carousel {
+  display: flex;
+  gap: var(--grid-gap, 16px);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 8px 0 24px;
+  /* Added bottom padding for scrollbar */
+  margin-bottom: -16px;
+}
+
+.featured-carousel::-webkit-scrollbar {
+  display: block;
+  height: 4px;
+}
+
+.featured-carousel::-webkit-scrollbar-track {
+  background: var(--shop-gray-200);
+  border-radius: 10px;
+}
+
+.featured-carousel::-webkit-scrollbar-thumb {
+  background: var(--shop-black);
+  border-radius: 10px;
+}
+
+.featured-card {
+  flex: 0 0 calc((100% - (var(--grid-gap, 16px) * (var(--grid-columns, 4) - 1))) / var(--grid-columns, 4));
+  min-width: 280px;
+  background: var(--shop-white);
+  cursor: pointer;
+  border: 1px solid var(--shop-gray-200);
+  transition: all var(--shop-transition);
+  display: flex;
+  flex-direction: column;
+}
+
+.featured-card:hover {
+  border-color: var(--shop-black);
+  box-shadow: var(--shop-shadow-md);
+}
+
+.featured-image {
+  aspect-ratio: var(--aspect-ratio, 4/5);
+  overflow: hidden;
+  background: var(--shop-gray-50);
+  position: relative;
+}
+
+/* Featured Like Button */
+.featured-like-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--shop-gray-500);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.featured-card:hover .featured-like-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.featured-like-btn:hover {
+  background: var(--shop-white);
+  color: #e11d48;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.featured-like-btn.liked {
+  opacity: 1;
+  transform: scale(1);
+  color: #e11d48;
+  background: var(--shop-white);
+}
+
+.featured-like-btn.liked:hover {
+  transform: scale(1.1);
+}
+
+.featured-like-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+@keyframes heartBeat {
+  0% {
+    transform: scale(1);
+  }
+
+  25% {
+    transform: scale(1.2);
+  }
+
+  50% {
+    transform: scale(1);
+  }
+
+  75% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.featured-like-btn.liked svg {
+  animation: heartBeat 0.6s ease;
+}
+
+.featured-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.featured-card:hover .featured-image img {
+  transform: scale(1.05);
+}
+
+.featured-info {
+  padding: 20px;
+}
+
+.featured-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.featured-desc {
+  font-size: 13px;
+  color: var(--shop-gray-400);
+  margin-bottom: 16px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.featured-cta {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--shop-black);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  transition: opacity var(--shop-transition);
+}
+
+.featured-cta:hover {
+  opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+  .featured-section {
+    padding: 32px 24px 0;
+  }
+
+  .featured-carousel {
+    margin: 0 -24px;
+    padding: 0 24px;
+  }
+
+  .featured-card {
+    flex: 0 0 260px;
+  }
+
+  .featured-title {
+    font-size: 22px;
+  }
+}
+
+/* AI Chat Highlight Animation */
+.product-card.ai-highlight {
+  animation: ai-highlight-pulse 0.6s ease-out;
+  box-shadow: 0 0 0 4px var(--shop-black), 0 8px 32px rgba(0, 0, 0, 0.25) !important;
+  transform: scale(1.02);
+  z-index: 10;
+  position: relative;
+}
+
+@keyframes ai-highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.5);
+    transform: scale(1);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(0, 0, 0, 0.2);
+    transform: scale(1.03);
+  }
+
+  100% {
+    box-shadow: 0 0 0 4px var(--shop-black);
+    transform: scale(1.02);
+  }
+}

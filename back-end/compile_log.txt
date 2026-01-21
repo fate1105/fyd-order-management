@@ -1,0 +1,22 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------------< com.fyd:fyd-backend >-------------------------
+[INFO] Building fyd-backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ fyd-backend ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ fyd-backend ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 59 source files with javac [debug parameters release 17] to target\classes
+[INFO] /D:/SpaceLearn/SaveLearn/DACN/fyd-order-management/back-end/src/main/java/com/fyd/backend/service/AiService.java: Some input files use unchecked or unsafe operations.
+[INFO] /D:/SpaceLearn/SaveLearn/DACN/fyd-order-management/back-end/src/main/java/com/fyd/backend/service/AiService.java: Recompile with -Xlint:unchecked for details.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.279 s
+[INFO] Finished at: 2026-01-19T14:28:34+07:00
+[INFO] ------------------------------------------------------------------------
