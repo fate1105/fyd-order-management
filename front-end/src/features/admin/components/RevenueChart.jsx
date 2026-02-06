@@ -9,6 +9,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+import { useTranslation } from 'react-i18next';
 
 ChartJS.register(
   CategoryScale,
@@ -21,11 +22,13 @@ ChartJS.register(
 );
 
 export default function RevenueChart({ data }) {
+  const { t } = useTranslation();
+
   const chartData = {
     labels: data?.map(d => d.date) || [],
     datasets: [
       {
-        label: 'Doanh thu',
+        label: t('revenue.chart_dataset'),
         data: data?.map(d => d.value) || [],
         borderColor: 'rgb(75, 192, 192)',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -42,7 +45,7 @@ export default function RevenueChart({ data }) {
       },
       title: {
         display: true,
-        text: 'Biểu đồ doanh thu'
+        text: t('revenue.chart_title')
       }
     }
   };

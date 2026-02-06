@@ -2,6 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import "../styles/fyd-shop.css";
 import "../styles/shop.css";
+import "../styles/reveals.css";
+import { useToast } from "@shared/context/ToastContext";
+import { useCart } from "@shared/context/CartContext";
 
 // Components
 import ShopHeader from "../components/ShopHeader.jsx";
@@ -12,14 +15,19 @@ import WishlistDrawer from "../components/WishlistDrawer.jsx";
 import HeroBanner from "../components/HeroBanner.jsx";
 import QuickViewModal from "../components/QuickViewModal.jsx";
 import LoginModal from "../components/LoginModal.jsx";
+import LuckySpinModal from "../components/LuckySpinModal.jsx";
 import Pagination from "../components/Pagination.jsx";
 import SortDropdown from "../components/SortDropdown.jsx";
 import FilterSidebar from "../components/FilterSidebar.jsx";
 import FeaturedProducts from "../components/FeaturedProducts.jsx";
 import AiChatBubble from "../components/AiChatBubble.jsx";
+import ShareWishlistModal from "../components/ShareWishlistModal.jsx";
+import ProductRecommendations from "../components/ProductRecommendations.jsx";
+import FlashSaleHub from "../components/FlashSaleHub.jsx";
+import ProductCardSkeleton from "../components/ProductCardSkeleton.jsx";
 
 // Utils
-import { fetchProducts, fetchCategories, fetchColors, fetchSizes } from "@shared/utils/api.js";
+import { fetchProducts, fetchCategories, fetchColors, fetchSizes, getAssetUrl } from "@shared/utils/api.js";
 import { getCustomer, logout as customerLogout } from "@shared/utils/customerSession.js";
 
 const PRODUCTS_PER_PAGE = 12;
@@ -38,6 +46,18 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Cart Context
+  const {
+    cart,
+    cartCount,
+    cartTotal,
+    cartOpen,
+    setCartOpen,
+    addToCart,
+    updateCartQty,
+    removeFromCart
+  } = useCart();
+
   // Filter states
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -51,15 +71,16 @@ export default function Shop() {
   const [filterSidebarOpen, setFilterSidebarOpen] = useState(true);
 
   // UI states
-  const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
-  const [cartOpen, setCartOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [luckySpinModalOpen, setLuckySpinModalOpen] = useState(false);
+  const [shareWishlistOpen, setShareWishlistOpen] = useState(false);
 
   // Customer state
   const [customer, setCustomer] = useState(null);
+  const { showToast } = useToast();
 
   // Load initial data
   useEffect(() => {
@@ -96,27 +117,6 @@ export default function Shop() {
       setCustomer(savedCustomer);
     }
   }, []);
-
-  // Load cart from localStorage
-  const [cartLoaded, setCartLoaded] = useState(false);
-  useEffect(() => {
-    const savedCart = localStorage.getItem("fyd-cart");
-    if (savedCart) {
-      try {
-        setCart(JSON.parse(savedCart));
-      } catch (e) {
-        console.error("Failed to parse cart:", e);
-      }
-    }
-    setCartLoaded(true);
-  }, []);
-
-  // Save cart to localStorage (only after initial load)
-  useEffect(() => {
-    if (cartLoaded) {
-      localStorage.setItem("fyd-cart", JSON.stringify(cart));
-    }
-  }, [cart, cartLoaded]);
 
   // Load wishlist from localStorage
   useEffect(() => {
@@ -209,7 +209,7 @@ export default function Shop() {
         result.sort((a, b) => (a.salePrice || a.basePrice) - (b.salePrice || b.basePrice));
         break;
       case "price-desc":
-        result.sort((a, b) => (b.salePrice || b.basePrice) - (a.salePrice || a.basePrice));
+        result.sort((a, b) => (b.salePrice || b.basePrice) - (a.salePrice || b.basePrice));
         break;
       case "name-asc":
         result.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
@@ -232,6 +232,29 @@ export default function Shop() {
     const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
     return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
   }, [filteredProducts, currentPage]);
+
+  // Scroll Reveal Logic
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: "0px 0px -50px 0px"
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+          // Once revealed, we can stop observing this element
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    const revealElements = document.querySelectorAll('.reveal');
+    revealElements.forEach(el => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [paginatedProducts]); // Re-observe when products change
 
   // Reset page when filters change
   // Handle URL filters from navigation (e.g., from Product Detail)
@@ -321,85 +344,7 @@ export default function Shop() {
     setSearch("");
   }, []);
 
-  // Cart functions
-  const addToCart = useCallback((product, variant = null, quantity = 1) => {
-    setCart((prev) => {
-      const itemId = variant ? `${product.id}-${variant.id}` : `${product.id}`;
-      const existing = prev.find((item) => item.itemId === itemId);
-
-      // Stock check
-      const currentQty = existing ? existing.qty : 0;
-      const totalRequested = currentQty + quantity;
-
-      if (variant && variant.stockQuantity !== undefined) {
-        if (totalRequested > variant.stockQuantity) {
-          alert(`Không thể thêm vào giỏ. Chỉ còn ${variant.stockQuantity} sản phẩm trong kho.`);
-          return prev;
-        }
-      } else if (product.variants && product.variants.length > 0 && variant) {
-        // Find variant in product.variants if variant passed doesn't have stockQuantity
-        const v = product.variants.find(v => v.id === variant.id);
-        if (v && v.stockQuantity !== undefined && totalRequested > v.stockQuantity) {
-          alert(`Không thể thêm vào giỏ. Chỉ còn ${v.stockQuantity} sản phẩm trong kho.`);
-          return prev;
-        }
-      }
-
-      if (existing) {
-        return prev.map((item) =>
-          item.itemId === itemId ? { ...item, qty: item.qty + quantity } : item
-        );
-      }
-
-      const price = product.salePrice || product.basePrice;
-      const primaryImage = product.images?.find((img) => img.isPrimary)?.imageUrl ||
-        product.images?.[0]?.imageUrl;
-
-      return [...prev, {
-        itemId,
-        productId: product.id,
-        variantId: variant?.id || null,
-        name: product.name,
-        price,
-        image: primaryImage,
-        variantInfo: variant ? `${variant.color || ''} - ${variant.size || ''}`.trim() : null,
-        qty: quantity,
-        stock: variant?.stockQuantity // Store stock quantity for easier limit checks in CartDrawer
-      }];
-    });
-  }, []);
-
-  const updateCartQty = useCallback((itemId, qty) => {
-    if (qty <= 0) {
-      setCart((prev) => prev.filter((item) => item.itemId !== itemId));
-    } else {
-      setCart((prev) =>
-        prev.map((item) => {
-          if (item.itemId === itemId) {
-            // Check stock limit if stored
-            if (item.stock !== undefined && qty > item.stock) {
-              alert(`Không thể tăng thêm. Chỉ còn ${item.stock} sản phẩm trong kho.`);
-              return item;
-            }
-            return { ...item, qty };
-          }
-          return item;
-        })
-      );
-    }
-  }, []);
-
-  const removeFromCart = useCallback((itemId) => {
-    setCart((prev) => prev.filter((item) => item.itemId !== itemId));
-  }, []);
-
-  const cartTotal = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-  }, [cart]);
-
-  const cartCount = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.qty, 0);
-  }, [cart]);
+  // Cart logic moved to context
 
   // Wishlist functions
   const toggleWishlist = useCallback((productId) => {
@@ -440,6 +385,13 @@ export default function Shop() {
     setShowSaleOnly(true);
   }, []);
 
+  const handleShowFlashSale = useCallback(() => {
+    handleShowAll();
+    setTimeout(() => {
+      document.getElementById('flash-sale-hub')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }, [handleShowAll]);
+
   // Customer functions
   const handleLogout = useCallback(() => {
     customerLogout();
@@ -460,7 +412,7 @@ export default function Shop() {
     }
     setCartOpen(false);
     navigate("/shop/checkout");
-  }, [customer, navigate]);
+  }, [customer, navigate, setCartOpen]);
 
   // Get current filter title
   const getFilterTitle = () => {
@@ -488,11 +440,13 @@ export default function Shop() {
         onSelectCategory={handleSelectCategory}
         onShowSale={handleShowSale}
         onShowAll={handleShowAll}
+        onFlashSaleClick={handleShowFlashSale}
         customer={customer}
         onLoginClick={() => setLoginModalOpen(true)}
         onLogoutClick={handleLogout}
         wishlistCount={wishlist.length}
         onWishlistClick={() => setWishlistOpen(true)}
+        onLuckySpinClick={() => setLuckySpinModalOpen(true)}
       />
 
       {/* Hero Banner with Dynamic Slides - Only render if active zones exist for hero */}
@@ -508,23 +462,43 @@ export default function Shop() {
         />
       )}
 
+      {/* Flash Sale Hub */}
+      {!selectedCategory && !selectedParentCategory && !search && (
+        <div className="shop-container reveal reveal-stagger-1" id="flash-sale-hub">
+          <FlashSaleHub
+            onQuickView={(product) => {
+              const fullProduct = products.find(p => p.id === (product?.id || product?.productId));
+              setQuickViewProduct(fullProduct || product);
+            }}
+            onToggleWishlist={toggleWishlist}
+            wishlist={wishlist}
+          />
+        </div>
+      )}
+
       {/* Home View Only Zones */}
       {!selectedCategory && !selectedParentCategory && !search && (
-        <>
+        <div className="reveal reveal-stagger-2">
           <FeaturedProducts
             position="home_featured"
-            onProductClick={setQuickViewProduct}
+            onProductClick={(product) => {
+              const fullProduct = products.find(p => p.id === (product?.id || product?.productId));
+              setQuickViewProduct(fullProduct || product);
+            }}
             wishlist={wishlistProducts}
             onToggleWishlist={(product) => toggleWishlist(product.id)}
           />
-        </>
+        </div>
       )}
 
       {/* Category View Top Zones */}
       {(selectedCategory || selectedParentCategory) && (
         <FeaturedProducts
           position="category_top"
-          onProductClick={setQuickViewProduct}
+          onProductClick={(product) => {
+            const fullProduct = products.find(p => p.id === (product?.id || product?.productId));
+            setQuickViewProduct(fullProduct || product);
+          }}
           wishlist={wishlistProducts}
           onToggleWishlist={(product) => toggleWishlist(product.id)}
         />
@@ -585,8 +559,10 @@ export default function Shop() {
           <div className="products-area">
             {/* Loading State */}
             {loading && (
-              <div className="loading-spinner">
-                <div className="spinner" />
+              <div className="product-grid">
+                {[...Array(8)].map((_, i) => (
+                  <ProductCardSkeleton key={i} />
+                ))}
               </div>
             )}
 
@@ -639,7 +615,10 @@ export default function Shop() {
       {(selectedCategory || selectedParentCategory) && (
         <FeaturedProducts
           position="category_bottom"
-          onProductClick={setQuickViewProduct}
+          onProductClick={(product) => {
+            const fullProduct = products.find(p => p.id === (product?.id || product?.productId));
+            setQuickViewProduct(fullProduct || product);
+          }}
           wishlist={wishlistProducts}
           onToggleWishlist={(product) => toggleWishlist(product.id)}
         />
@@ -649,10 +628,24 @@ export default function Shop() {
       {!selectedCategory && !selectedParentCategory && !search && (
         <FeaturedProducts
           position="home_bottom"
-          onProductClick={setQuickViewProduct}
+          onProductClick={(product) => {
+            const fullProduct = products.find(p => p.id === (product?.id || product?.productId));
+            setQuickViewProduct(fullProduct || product);
+          }}
           wishlist={wishlistProducts}
           onToggleWishlist={(product) => toggleWishlist(product.id)}
         />
+      )}
+
+      {/* AI Popular Products Recommendations */}
+      {!selectedCategory && !selectedParentCategory && !search && (
+        <section className="popular-products-section">
+          <ProductRecommendations
+            type="popular"
+            title="SẢN PHẨM PHỔ BIẾN"
+            limit={8}
+          />
+        </section>
       )}
 
       {/* Footer */}
@@ -675,7 +668,18 @@ export default function Shop() {
         products={wishlistProducts}
         onClose={() => setWishlistOpen(false)}
         onRemove={toggleWishlist}
-        onAddToCart={addToCart}
+        onAddToCart={(product) => {
+          setWishlistOpen(false);
+          setQuickViewProduct(product);
+        }}
+        onShare={() => { setWishlistOpen(false); setShareWishlistOpen(true); }}
+      />
+
+      {/* Share Wishlist Modal */}
+      <ShareWishlistModal
+        open={shareWishlistOpen}
+        productIds={wishlist}
+        onClose={() => setShareWishlistOpen(false)}
       />
 
       {/* Quick View Modal */}
@@ -694,6 +698,13 @@ export default function Shop() {
         isOpen={loginModalOpen}
         onClose={() => setLoginModalOpen(false)}
         onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* Lucky Spin Modal */}
+      <LuckySpinModal
+        isOpen={luckySpinModalOpen}
+        onClose={() => setLuckySpinModalOpen(false)}
+        onLoginRequired={() => setLoginModalOpen(true)}
       />
 
       {/* AI Chat Bubble */}

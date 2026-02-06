@@ -60,6 +60,9 @@ public class Product {
     @Column(name = "is_new")
     private Boolean isNew = false;
 
+    @Column(name = "is_flash_sale")
+    private Boolean isFlashSale = false;
+
     @Column(length = 30)
     private String status = "ACTIVE";
 
@@ -116,6 +119,8 @@ public class Product {
     public void setIsFeatured(Boolean isFeatured) { this.isFeatured = isFeatured; }
     public Boolean getIsNew() { return isNew; }
     public void setIsNew(Boolean isNew) { this.isNew = isNew; }
+    public Boolean getIsFlashSale() { return isFlashSale; }
+    public void setIsFlashSale(Boolean isFlashSale) { this.isFlashSale = isFlashSale; }
     public Integer getViewCount() { return viewCount; }
     public void setViewCount(Integer viewCount) { this.viewCount = viewCount; }
     public Integer getSoldCount() { return soldCount; }

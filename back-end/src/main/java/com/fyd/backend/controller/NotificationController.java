@@ -44,12 +44,14 @@ public class NotificationController {
         // Calculate counts
         Map<String, Long> counts = new HashMap<>();
         List<Notification> all = notificationRepository.findAll();
+        List<Notification> unread = all.stream().filter(n -> !n.getIsRead()).toList();
+        
         counts.put("all", (long) all.size());
-        counts.put("unread", all.stream().filter(n -> !n.getIsRead()).count());
-        counts.put("order", all.stream().filter(n -> "order".equals(n.getType())).count());
-        counts.put("inventory", all.stream().filter(n -> "inventory".equals(n.getType())).count());
-        counts.put("customer", all.stream().filter(n -> "customer".equals(n.getType())).count());
-        counts.put("system", all.stream().filter(n -> "system".equals(n.getType())).count());
+        counts.put("unread", (long) unread.size());
+        counts.put("order", unread.stream().filter(n -> "order".equals(n.getType())).count());
+        counts.put("inventory", unread.stream().filter(n -> "inventory".equals(n.getType())).count());
+        counts.put("customer", unread.stream().filter(n -> "customer".equals(n.getType())).count());
+        counts.put("system", unread.stream().filter(n -> "system".equals(n.getType())).count());
 
         Map<String, Object> response = new HashMap<>();
         response.put("notifications", notificationDTOs);

@@ -1,14 +1,50 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import basicSsl from '@vitejs/plugin-basic-ssl'
+import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), basicSsl()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: 'auto',
+      devOptions: {
+        enabled: true
+      },
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      manifest: {
+        name: 'FYD Sport - Modern Order Management',
+        short_name: 'FYD Sport',
+        description: 'Advanced Order Management and Shop Experience for FYD Sport',
+        theme_color: '#000000',
+        background_color: '#ffffff',
+        display: 'standalone',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          }
+        ]
+      }
+    })
+  ],
   server: {
-    https: true,
-    port: 5174,
+    https: false,
+    port: 5175,
   },
   resolve: {
     alias: {
@@ -18,5 +54,8 @@ export default defineConfig({
       '@auth': path.resolve(__dirname, './src/features/auth'),
       '@shared': path.resolve(__dirname, './src/shared'),
     },
+  },
+  define: {
+    global: 'window',
   },
 })

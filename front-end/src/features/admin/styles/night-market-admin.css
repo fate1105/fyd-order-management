@@ -1,0 +1,124 @@
+/* night-market-admin.css - Premium Night Market Design */
+
+.night-market-admin-page {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Content Container */
+.nm-admin-content {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--admin-radius-lg);
+    padding: 32px;
+    backdrop-filter: blur(var(--admin-blur));
+    -webkit-backdrop-filter: blur(var(--admin-blur));
+    box-shadow: var(--admin-shadow-lg);
+}
+
+.nm-admin-form {
+    width: 100%;
+}
+
+.nm-section-group {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius-md);
+    margin-bottom: 24px;
+}
+
+.nm-section-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--admin-accent);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nm-section-title svg {
+    width: 18px;
+    height: 18px;
+}
+
+.nm-form-row {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+}
+
+.nm-form-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.nm-form-field label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.nm-form-field input {
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius-md);
+    color: var(--admin-text);
+    font-size: 14px;
+    transition: all var(--admin-transition);
+}
+
+.nm-form-field input:focus {
+    outline: none;
+    border-color: var(--admin-accent);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 0 3px rgba(var(--admin-accent-rgb), 0.1);
+}
+
+.nm-actions {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--admin-border);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-primary-nm {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 32px;
+    background: var(--admin-accent-gradient);
+    border: none;
+    border-radius: var(--admin-radius-full);
+    color: #0a0a0f;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all var(--admin-transition);
+    box-shadow: 0 4px 15px rgba(var(--admin-accent-rgb), 0.3);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

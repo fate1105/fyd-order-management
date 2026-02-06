@@ -2,6 +2,7 @@ package com.fyd.backend.controller;
 
 import com.fyd.backend.dto.DashboardDTO;
 import com.fyd.backend.dto.OrderDTO;
+import com.fyd.backend.dto.ProfileStatsDTO;
 import com.fyd.backend.entity.Order;
 import com.fyd.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,12 @@ public class DashboardController {
     
     @Autowired
     private OrderItemRepository orderItemRepository;
+    
+    @Autowired
+    private ProductRepository productRepository;
+    
+    @Autowired
+    private CustomerRepository customerRepository;
     
     @Autowired
     private com.fyd.backend.service.AiInsightService aiInsightService;
@@ -88,6 +95,7 @@ public class DashboardController {
         NumberFormat vndFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
         List<DashboardDTO.KpiDTO> kpis = new ArrayList<>();
         kpis.add(new DashboardDTO.KpiDTO(
+            "revenue_today",
             "Doanh thu hôm nay",
             vndFormat.format(todayRevenue) + "₫",
             dashboard.getTodayRevenueChange().compareTo(BigDecimal.ZERO) >= 0 ? "up" : "down",
@@ -95,26 +103,41 @@ public class DashboardController {
                 + dashboard.getTodayRevenueChange().setScale(1, RoundingMode.HALF_UP) + "%"
         ));
         kpis.add(new DashboardDTO.KpiDTO(
+            "pending_orders",
             "Đơn chờ xử lý",
             String.valueOf(dashboard.getPendingOrders()),
             "warn",
-            "Ưu tiên"
+            "badge_priority"
         ));
         kpis.add(new DashboardDTO.KpiDTO(
+            "return_rate",
             "Tỉ lệ hoàn",
             dashboard.getReturnRate() + "%",
             "down",
             dashboard.getReturnRateChange() + "%"
         ));
         kpis.add(new DashboardDTO.KpiDTO(
+            "low_stock",
             "Sản phẩm sắp hết",
             String.valueOf(dashboard.getLowStockProducts()),
             "warn",
-            "Cảnh báo"
+            "badge_warning"
         ));
         dashboard.setKpis(kpis);
         
         return ResponseEntity.ok(dashboard);
+    }
+
+    @GetMapping("/profile-stats")
+    public ResponseEntity<ProfileStatsDTO> getProfileStats() {
+        LocalDateTime todayStart = LocalDateTime.now().with(LocalTime.MIN);
+        
+        ProfileStatsDTO stats = new ProfileStatsDTO();
+        stats.setTodayOrders(orderRepository.countFrom(todayStart));
+        stats.setTodayProducts(productRepository.countUpdatedFrom(todayStart));
+        stats.setTodayCustomers(customerRepository.countFrom(todayStart));
+        
+        return ResponseEntity.ok(stats);
     }
 
     @GetMapping("/revenue")

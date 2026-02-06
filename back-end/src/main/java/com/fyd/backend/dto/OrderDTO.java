@@ -29,6 +29,10 @@ public class OrderDTO {
     private Integer pointsUsed;
     private Integer pointsEarned;
     private LocalDateTime createdAt;
+    private String paymentUrl;
+    private String trackingNumber;
+    private String carrier;
+    private String shippingLabelUrl;
     private List<OrderItemDTO> items;
 
     public static OrderDTO fromEntity(Order o) {
@@ -68,6 +72,10 @@ public class OrderDTO {
                 .map(OrderItemDTO::fromEntity)
                 .collect(Collectors.toList()));
         }
+
+        dto.setTrackingNumber(o.getTrackingNumber());
+        dto.setCarrier(o.getCarrier());
+        dto.setShippingLabelUrl(o.getShippingLabelUrl());
         
         return dto;
     }
@@ -119,4 +127,16 @@ public class OrderDTO {
     public void setPointsUsed(Integer pointsUsed) { this.pointsUsed = pointsUsed; }
     public Integer getPointsEarned() { return pointsEarned; }
     public void setPointsEarned(Integer pointsEarned) { this.pointsEarned = pointsEarned; }
+    
+    public String getPaymentUrl() { return paymentUrl; }
+    public void setPaymentUrl(String paymentUrl) { this.paymentUrl = paymentUrl; }
+    
+    public String getTrackingNumber() { return trackingNumber; }
+    public void setTrackingNumber(String trackingNumber) { this.trackingNumber = trackingNumber; }
+    
+    public String getCarrier() { return carrier; }
+    public void setCarrier(String carrier) { this.carrier = carrier; }
+    
+    public String getShippingLabelUrl() { return shippingLabelUrl; }
+    public void setShippingLabelUrl(String shippingLabelUrl) { this.shippingLabelUrl = shippingLabelUrl; }
 }

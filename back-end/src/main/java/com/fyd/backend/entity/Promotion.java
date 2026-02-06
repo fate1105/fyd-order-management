@@ -47,6 +47,9 @@ public class Promotion {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    @Column(name = "is_flash_sale")
+    private Boolean isFlashSale = false;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -127,6 +130,8 @@ public class Promotion {
     public void setEndDate(LocalDateTime endDate) { this.endDate = endDate; }
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public Boolean getIsFlashSale() { return isFlashSale; }
+    public void setIsFlashSale(Boolean isFlashSale) { this.isFlashSale = isFlashSale; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

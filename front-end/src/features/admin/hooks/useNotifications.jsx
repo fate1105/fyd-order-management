@@ -64,11 +64,18 @@ export function NotificationProvider({ children }) {
 
     // Mark single notification as read
     const markRead = useCallback(async (id) => {
+        const notification = notifications.find(n => n.id === id);
+        if (!notification || notification.isRead) return;
+
         // Optimistic update
         setNotifications(prev =>
             prev.map(n => n.id === id ? { ...n, isRead: true } : n)
         );
-        setCounts(prev => ({ ...prev, unread: Math.max(0, prev.unread - 1) }));
+        setCounts(prev => ({
+            ...prev,
+            unread: Math.max(0, prev.unread - 1),
+            [notification.type]: Math.max(0, (prev[notification.type] || 0) - 1)
+        }));
 
         try {
             await notificationAPI.markRead(id);
@@ -77,13 +84,20 @@ export function NotificationProvider({ children }) {
             // Reload on error
             loadNotifications();
         }
-    }, [loadNotifications]);
+    }, [notifications, loadNotifications]);
 
     // Mark all as read
     const markAllRead = useCallback(async () => {
         // Optimistic update
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-        setCounts(prev => ({ ...prev, unread: 0 }));
+        setCounts(prev => ({
+            ...prev,
+            unread: 0,
+            order: 0,
+            inventory: 0,
+            customer: 0,
+            system: 0
+        }));
 
         try {
             await notificationAPI.markAllRead();
@@ -96,13 +110,20 @@ export function NotificationProvider({ children }) {
     // Delete notification
     const deleteNotification = useCallback(async (id) => {
         const notification = notifications.find(n => n.id === id);
+        if (!notification) return;
 
         // Optimistic update
         setNotifications(prev => prev.filter(n => n.id !== id));
-        if (notification && !notification.isRead) {
-            setCounts(prev => ({ ...prev, unread: Math.max(0, prev.unread - 1), all: prev.all - 1 }));
+
+        if (!notification.isRead) {
+            setCounts(prev => ({
+                ...prev,
+                all: Math.max(0, prev.all - 1),
+                unread: Math.max(0, prev.unread - 1),
+                [notification.type]: Math.max(0, (prev[notification.type] || 0) - 1)
+            }));
         } else {
-            setCounts(prev => ({ ...prev, all: prev.all - 1 }));
+            setCounts(prev => ({ ...prev, all: Math.max(0, prev.all - 1) }));
         }
 
         try {

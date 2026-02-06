@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface BrandRepository extends JpaRepository<Brand, Long> {
     Optional<Brand> findBySlug(String slug);
+    Optional<Brand> findByName(String name);
     
     @Query("SELECT b FROM Brand b WHERE b.status = 'ACTIVE'")
     List<Brand> findAllActive();

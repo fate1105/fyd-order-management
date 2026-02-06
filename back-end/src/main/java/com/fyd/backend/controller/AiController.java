@@ -50,7 +50,20 @@ public class AiController {
      */
     @PostMapping("/shop-chat")
     public ResponseEntity<AiChatResponse> shopChat(@RequestBody AiChatRequest request) {
-        AiChatResponse response = aiService.chatForShop(request.getMessage());
+        AiChatResponse response = aiService.chatForShop(request.getMessage(), request.getCustomerId());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * AI Size Advisor - suggests best size based on customer measurements
+     */
+    @GetMapping("/size-advisor")
+    public ResponseEntity<AiChatResponse> sizeAdvisor(
+            @RequestParam Long productId,
+            @RequestParam Double height,
+            @RequestParam Double weight,
+            @RequestParam(required = false, defaultValue = "regular") String fit) {
+        AiChatResponse response = aiService.suggestSize(productId, height, weight, fit);
         return ResponseEntity.ok(response);
     }
 

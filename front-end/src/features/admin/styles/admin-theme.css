@@ -91,6 +91,36 @@
   --panel2: var(--admin-surface-elevated);
 }
 
+/* Light Theme Overrides */
+body.light {
+  --admin-bg: #f8fafc;
+  --admin-bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #eef2ff 100%);
+  --admin-surface: #ffffff;
+  --admin-surface-elevated: #f1f5f9;
+  --admin-surface-glass: rgba(15, 23, 42, 0.03);
+
+  --admin-border: rgba(15, 23, 42, 0.08);
+  --admin-border-hover: rgba(15, 23, 42, 0.15);
+  --admin-border-glow: rgba(59, 130, 246, 0.2);
+
+  --admin-text: #0f172a;
+  --admin-text-muted: #64748b;
+  --admin-text-muted-2: #94a3b8;
+
+  --admin-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --admin-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --admin-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(15, 23, 42, 0.1);
+  --glass-hover: rgba(255, 255, 255, 0.95);
+
+  --dd-bg: #ffffff;
+  --dd-border: rgba(15, 23, 42, 0.08);
+  --dd-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+  --item-hover: #f1f5f9;
+}
+
 /* =====================================================
    BASE STYLES
    ===================================================== */

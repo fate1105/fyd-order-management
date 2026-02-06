@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useNotifications, formatRelativeTime } from '../../hooks/useNotifications.jsx';
 import './notifications.css';
 
@@ -77,16 +78,17 @@ const Icons = {
 
 // Filter tabs configuration
 const FILTERS = [
-    { key: 'all', label: 'Tất cả' },
-    { key: 'unread', label: 'Chưa đọc' },
-    { key: 'order', label: 'Đơn hàng' },
-    { key: 'inventory', label: 'Kho' },
-    { key: 'customer', label: 'Khách' },
-    { key: 'system', label: 'Hệ thống' },
+    { key: 'all', labelKey: 'notifications_panel.filter_all' },
+    { key: 'unread', labelKey: 'notifications_panel.filter_unread' },
+    { key: 'order', labelKey: 'notifications_panel.filter_order' },
+    { key: 'inventory', labelKey: 'notifications_panel.filter_inventory' },
+    { key: 'customer', labelKey: 'notifications_panel.filter_customer' },
+    { key: 'system', labelKey: 'notifications_panel.filter_system' },
 ];
 
 // Notification Item Component
 function NotificationItem({ notification, onMarkRead, onDelete, onClick }) {
+    const { t } = useTranslation();
     const IconComponent = Icons[notification.type] || Icons.system;
     const timeAgo = formatRelativeTime(notification.timestamp);
 
@@ -110,7 +112,7 @@ function NotificationItem({ notification, onMarkRead, onDelete, onClick }) {
             onClick={handleClick}
             role="listitem"
             tabIndex={0}
-            aria-label={`${notification.title}, ${timeAgo}, ${notification.isRead ? 'đã đọc' : 'chưa đọc'}`}
+            aria-label={`${notification.title}, ${timeAgo}, ${notification.isRead ? t('notifications_panel.read_status') : t('notifications_panel.unread_status')}`}
             onKeyDown={(e) => e.key === 'Enter' && handleClick()}
         >
             <div className={`notif-icon ${notification.type}`}>
@@ -128,8 +130,8 @@ function NotificationItem({ notification, onMarkRead, onDelete, onClick }) {
                     <button
                         className="notif-action-btn"
                         onClick={handleMarkRead}
-                        title="Đánh dấu đã đọc"
-                        aria-label="Đánh dấu đã đọc"
+                        title={t('notifications_panel.mark_read')}
+                        aria-label={t('notifications_panel.mark_read')}
                     >
                         <Icons.check />
                     </button>
@@ -137,8 +139,8 @@ function NotificationItem({ notification, onMarkRead, onDelete, onClick }) {
                 <button
                     className="notif-action-btn delete"
                     onClick={handleDelete}
-                    title="Xóa"
-                    aria-label="Xóa thông báo"
+                    title={t('notifications_panel.delete')}
+                    aria-label={t('notifications_panel.delete_aria')}
                 >
                     <Icons.trash />
                 </button>
@@ -150,13 +152,14 @@ function NotificationItem({ notification, onMarkRead, onDelete, onClick }) {
 
 // Empty State Component
 function NotificationEmpty({ filter }) {
+    const { t } = useTranslation();
     const messages = {
-        all: { icon: <Icons.inbox />, text: 'Không có thông báo nào' },
-        unread: { icon: <Icons.checkCircle />, text: 'Tuyệt vời! Bạn đã đọc hết' },
-        order: { icon: <Icons.order />, text: 'Không có thông báo đơn hàng' },
-        inventory: { icon: <Icons.inventory />, text: 'Không có cảnh báo tồn kho' },
-        customer: { icon: <Icons.customer />, text: 'Không có thông báo khách hàng' },
-        system: { icon: <Icons.system />, text: 'Không có thông báo hệ thống' },
+        all: { icon: <Icons.inbox />, text: t('notifications_panel.empty_all') },
+        unread: { icon: <Icons.checkCircle />, text: t('notifications_panel.empty_unread') },
+        order: { icon: <Icons.order />, text: t('notifications_panel.empty_order') },
+        inventory: { icon: <Icons.inventory />, text: t('notifications_panel.empty_inventory') },
+        customer: { icon: <Icons.customer />, text: t('notifications_panel.empty_customer') },
+        system: { icon: <Icons.system />, text: t('notifications_panel.empty_system') },
     };
 
     const { icon, text } = messages[filter] || messages.all;
@@ -187,8 +190,9 @@ function NotificationLoading({ count = 3 }) {
 }
 
 // Main NotificationPanel Component
-export default function NotificationPanel({ isOpen, onClose }) {
+export default function NotificationPanel({ isOpen, onClose, onViewAll }) {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const panelRef = useRef(null);
     const {
         notifications,
@@ -239,16 +243,16 @@ export default function NotificationPanel({ isOpen, onClose }) {
         >
             {/* Header */}
             <div className="notif-header">
-                <span className="notif-header-title">Thông báo</span>
+                <span className="notif-header-title">{t('notifications_panel.title')}</span>
                 <div className="notif-header-actions">
                     {counts.unread > 0 && (
-                        <span className="notif-badge">{counts.unread} mới</span>
+                        <span className="notif-badge">{t('notifications_panel.new_count', { count: counts.unread })}</span>
                     )}
                     <button
                         className="notif-header-btn"
                         onClick={markAllRead}
-                        title="Đánh dấu tất cả đã đọc"
-                        aria-label="Đánh dấu tất cả đã đọc"
+                        title={t('notifications_panel.mark_all_read')}
+                        aria-label={t('notifications_panel.mark_all_read')}
                     >
                         <Icons.check />
                     </button>
@@ -256,7 +260,7 @@ export default function NotificationPanel({ isOpen, onClose }) {
             </div>
 
             {/* Filters */}
-            <div className="notif-filters" role="tablist" aria-label="Lọc thông báo">
+            <div className="notif-filters" role="tablist" aria-label={t('notifications_panel.title')}>
                 {FILTERS.map((filter) => (
                     <button
                         key={filter.key}
@@ -265,7 +269,7 @@ export default function NotificationPanel({ isOpen, onClose }) {
                         className={`notif-filter-tab ${activeFilter === filter.key ? 'active' : ''}`}
                         onClick={() => changeFilter(filter.key)}
                     >
-                        {filter.label}
+                        {t(filter.labelKey)}
                         {counts[filter.key] > 0 && filter.key !== 'all' && (
                             <span className="notif-filter-count">{counts[filter.key]}</span>
                         )}
@@ -295,7 +299,7 @@ export default function NotificationPanel({ isOpen, onClose }) {
             {/* Footer */}
             {hasMore && !loading && (
                 <button className="notif-footer" onClick={loadMore}>
-                    Xem thêm thông báo →
+                    {t('notifications_panel.view_more')} →
                 </button>
             )}
 
@@ -304,10 +308,14 @@ export default function NotificationPanel({ isOpen, onClose }) {
                     className="notif-footer"
                     onClick={() => {
                         onClose();
-                        navigate('/admin/notifications');
+                        if (onViewAll) {
+                            onViewAll();
+                        } else {
+                            navigate('/admin/notifications');
+                        }
                     }}
                 >
-                    Xem tất cả thông báo →
+                    {t('notifications_panel.view_all')} →
                 </button>
             )}
         </div>

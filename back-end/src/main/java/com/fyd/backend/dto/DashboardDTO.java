@@ -14,18 +14,22 @@ public class DashboardDTO {
     private List<KpiDTO> kpis;
 
     public static class KpiDTO {
+        private String id;
         private String title;
         private String value;
         private String trendType;
         private String trendLabel;
 
-        public KpiDTO(String title, String value, String trendType, String trendLabel) {
+        public KpiDTO(String id, String title, String value, String trendType, String trendLabel) {
+            this.id = id;
             this.title = title;
             this.value = value;
             this.trendType = trendType;
             this.trendLabel = trendLabel;
         }
 
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
         public String getTitle() { return title; }
         public void setTitle(String title) { this.title = title; }
         public String getValue() { return value; }

@@ -1,0 +1,147 @@
+.info-page-container {
+    padding-top: 80px;
+    /* Space for fixed header */
+    min-height: 80vh;
+    background-color: #ffffff;
+}
+
+.info-hero {
+    background-color: #000000;
+    color: #ffffff;
+    padding: 80px 20px;
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.info-hero h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+}
+
+.info-hero p {
+    font-size: 1.1rem;
+    opacity: 0.8;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.info-content-wrapper {
+    max-width: 900px;
+    margin: 0 auto 100px;
+    padding: 0 20px;
+    line-height: 1.8;
+    color: #333333;
+}
+
+.info-section {
+    margin-bottom: 50px;
+}
+
+.info-section h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 25px;
+    color: #000000;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.info-section h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 2px;
+    background-color: #000000;
+}
+
+.info-section p {
+    margin-bottom: 20px;
+    font-size: 1.05rem;
+}
+
+.info-section ul,
+.info-section ol {
+    margin-bottom: 25px;
+    padding-left: 20px;
+}
+
+.info-section li {
+    margin-bottom: 12px;
+}
+
+.faq-item {
+    border-bottom: 1px solid #eeeeee;
+    padding: 25px 0;
+}
+
+.faq-item:last-child {
+    border-bottom: none;
+}
+
+.faq-question {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.1rem;
+    padding: 10px 0;
+}
+
+.faq-answer {
+    padding-top: 15px;
+    color: #666666;
+    font-size: 1rem;
+}
+
+.contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.contact-card {
+    background: #f9f9f9;
+    padding: 40px;
+    border-radius: 12px;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.contact-card:hover {
+    transform: translateY(-5px);
+    background: #f0f0f0;
+}
+
+.contact-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: #000000;
+}
+
+.contact-card p {
+    color: #666666;
+    margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+    .info-hero {
+        padding: 60px 20px;
+    }
+
+    .info-hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .info-content-wrapper {
+        margin-bottom: 60px;
+    }
+}

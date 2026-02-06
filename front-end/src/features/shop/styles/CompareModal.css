@@ -1,0 +1,325 @@
+.compare-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.compare-modal-container {
+    background: var(--shop-white);
+    width: 100%;
+    max-width: 1400px;
+    max-height: 90vh;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+@keyframes modalSlideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.compare-modal-header {
+    padding: 32px 48px;
+    border-bottom: 2px solid var(--shop-black);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.compare-modal-title h2 {
+    font-size: 32px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    margin: 0;
+}
+
+.compare-modal-title p {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: var(--shop-gray-400);
+    font-weight: 600;
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+    color: var(--shop-black);
+}
+
+.close-modal-btn:hover {
+    transform: rotate(90deg);
+    color: var(--shop-sale);
+}
+
+.compare-modal-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+/* Compare Grid Styles - Refactored for Row-based alignment */
+.compare-grid {
+    /* Layout handled via inline styles for dynamic columns */
+    background: var(--shop-gray-200);
+}
+
+.compare-cell {
+    background: var(--shop-white);
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    min-height: 70px;
+    color: var(--shop-black);
+    /* Higher contrast */
+}
+
+.compare-label-cell {
+    background: var(--shop-gray-100);
+    /* Darker than gray-50 for better label visibility */
+    justify-content: flex-start;
+    text-align: left;
+    font-weight: 900;
+    /* Extra bold */
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: 11px;
+    color: var(--shop-black);
+    padding-left: 32px;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+}
+
+.product-top-label {
+    align-items: flex-start;
+    padding-top: 40px;
+}
+
+.product-top-cell {
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-top: 40px;
+}
+
+.compare-product-top {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.compare-product-top img {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    margin-bottom: 24px;
+    mix-blend-mode: multiply;
+    transition: transform 0.3s;
+}
+
+.compare-product-top:hover img {
+    transform: scale(1.05);
+}
+
+.compare-product-name {
+    font-size: 16px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    color: var(--shop-black);
+    text-decoration: none;
+    margin-bottom: 12px;
+    line-height: 1.2;
+}
+
+.compare-price {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--shop-black);
+}
+
+.compare-price-old {
+    text-decoration: line-through;
+    font-size: 14px;
+    color: var(--shop-gray-500);
+    /* Slightly darker */
+    margin-top: 4px;
+}
+
+.stock-badge {
+    padding: 8px 16px;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.stock-badge.in {
+    background: var(--shop-black);
+    color: var(--shop-white);
+}
+
+.stock-badge.out {
+    background: var(--shop-sale);
+    color: var(--shop-white);
+}
+
+.desc-cell {
+    text-align: left;
+    line-height: 1.6;
+    color: var(--shop-black);
+    /* High contrast */
+    font-size: 13px;
+    padding: 24px 32px;
+}
+
+.compare-stars {
+    background: var(--shop-gray-100);
+    padding: 8px 16px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--shop-gray-200);
+}
+
+.star-icon {
+    color: #ffc107;
+    font-size: 18px;
+}
+
+.compare-remove-btn {
+    background: var(--shop-white);
+    border: 2px solid var(--shop-black);
+    padding: 12px 24px;
+    font-weight: 900;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--shop-black);
+}
+
+.compare-remove-btn:hover {
+    background: var(--shop-black);
+    color: var(--shop-white);
+}
+
+.compare-product-name:hover {
+    text-decoration: underline;
+}
+
+.compare-price {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--shop-black);
+}
+
+.compare-modal-content .compare-grid {
+    border: none;
+}
+
+.compare-modal-footer {
+    padding: 24px 48px;
+    background: var(--shop-gray-50);
+    border-top: 1px solid var(--shop-gray-200);
+    display: flex;
+    justify-content: center;
+}
+
+.compare-remove-btn {
+    width: 100%;
+    background: var(--shop-white);
+    border: 2px solid var(--shop-black);
+    color: var(--shop-black);
+    padding: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.compare-remove-btn:hover {
+    background: var(--shop-black);
+    color: var(--shop-white);
+}
+
+@media (max-width: 1024px) {
+    .compare-modal-overlay {
+        padding: 20px;
+    }
+
+    .compare-modal-header {
+        padding: 24px;
+    }
+
+    .compare-grid {
+        grid-template-columns: 160px repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .compare-cell {
+        padding: 24px 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .compare-grid {
+        display: flex;
+        flex-direction: column;
+        border: none;
+        gap: 40px;
+        background: transparent;
+    }
+
+    .compare-label-col {
+        display: none;
+    }
+
+    .compare-col {
+        border: 1px solid var(--shop-gray-200);
+    }
+}
+
+.modal-empty-state {
+    padding: 80px 40px;
+    text-align: center;
+}
+
+.modal-empty-state h3 {
+    font-size: 24px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+}

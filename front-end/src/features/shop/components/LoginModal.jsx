@@ -1,5 +1,6 @@
 /* global FB */
 import { useState } from "react";
+import { useToast } from "@shared/context/ToastContext";
 import { useGoogleLogin } from "@react-oauth/google";
 import { customerAuthAPI } from "@shared/utils/customerAuthApi.js";
 import { setCustomerSession } from "@shared/utils/customerSession.js";
@@ -15,6 +16,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { showToast } = useToast();
 
   // Google OAuth
   const googleLogin = useGoogleLogin({
@@ -145,7 +147,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
         setError('');
         switchMode('login');
         setEmail(email);
-        alert(response.message || 'Đăng ký thành công! Vui lòng đăng nhập.');
+        showToast(response.message || 'Đăng ký thành công! Vui lòng đăng nhập.');
       } else {
         setError(response.message || 'Đăng ký thất bại');
       }
@@ -168,7 +170,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
       <div className="login-modal">
         <button className="login-modal-close" onClick={onClose} aria-label="Đóng">×</button>
 
-        <div className="login-modal-content">
+        <div className="login-modal-content" key={mode}>
           <div className="login-modal-header">
             <h2>{mode === 'login' ? 'ĐĂNG NHẬP' : 'TẠO TÀI KHOẢN'}</h2>
             <p>{mode === 'login'

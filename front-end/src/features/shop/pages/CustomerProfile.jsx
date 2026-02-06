@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useCart } from "@shared/context/CartContext";
 import ShopHeader from "../components/ShopHeader.jsx";
 import ShopFooter from "../components/ShopFooter.jsx";
+import CartDrawer from "../components/CartDrawer.jsx";
+import LuckySpinModal from "../components/LuckySpinModal.jsx";
+import LoginModal from "../components/LoginModal.jsx";
 import { getCustomer, logout as customerLogout } from "@shared/utils/customerSession.js";
 import { customerAPI, orderAPI, fetchCategories, formatVND, formatDate, ORDER_STATUS, pointsAPI } from "@shared/utils/api.js";
 import "../styles/fyd-shop.css";
@@ -23,6 +27,8 @@ export default function CustomerProfile() {
     const [cancelOrderId, setCancelOrderId] = useState(null);
     const [cancelReason, setCancelReason] = useState("");
     const [tiers, setTiers] = useState([]);
+    const [luckySpinModalOpen, setLuckySpinModalOpen] = useState(false);
+    const [loginModalOpen, setLoginModalOpen] = useState(false);
     const [formData, setFormData] = useState({
         fullName: "",
         email: "",
@@ -30,6 +36,18 @@ export default function CustomerProfile() {
         gender: "",
         avatarUrl: ""
     });
+
+    // Cart Context
+    const {
+        cart,
+        cartCount,
+        cartTotal,
+        cartOpen,
+        setCartOpen,
+        addToCart,
+        updateCartQty,
+        removeFromCart
+    } = useCart();
 
     // Load customer data
     useEffect(() => {
@@ -195,8 +213,13 @@ export default function CustomerProfile() {
             <ShopHeader
                 customer={customer}
                 categories={categories}
+                cartCount={cartCount}
+                onCartClick={() => setCartOpen(true)}
                 onLogoutClick={handleLogout}
                 onShowAll={() => navigate('/shop')}
+                onLuckySpinClick={() => setLuckySpinModalOpen(true)}
+                onSelectCategory={(id, type) => navigate(`/shop?${type === 'parent' ? 'parentCategory' : 'category'}=${id}`)}
+                onShowSale={() => navigate('/shop?sale=true')}
             />
 
             <main className="profile-page">
@@ -617,6 +640,30 @@ export default function CustomerProfile() {
                                                 <span>Tổng cộng:</span>
                                                 <strong className="text-large">{formatVND(selectedOrder.totalAmount)}</strong>
                                             </div>
+                                            {selectedOrder.trackingNumber && (
+                                                <div className="detail-row tracking-info" style={{ marginTop: 10, padding: 10, backgroundColor: '#f0f9ff', borderRadius: 6, border: '1px solid #bae6fd' }}>
+                                                    <div style={{ fontSize: 13, color: '#0369a1', fontWeight: 600, marginBottom: 5, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <rect x="1" y="3" width="15" height="13" />
+                                                            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                                                            <circle cx="5.5" cy="18.5" r="2.5" />
+                                                            <circle cx="18.5" cy="18.5" r="2.5" />
+                                                        </svg>
+                                                        Thông tin vận chuyển
+                                                    </div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <span style={{ fontSize: 13 }}>GHTK: <strong>{selectedOrder.trackingNumber}</strong></span>
+                                                        <a
+                                                            href={`https://i.ghtk.vn/${selectedOrder.trackingNumber}`}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            style={{ fontSize: 12, color: '#0284c7', textDecoration: 'underline' }}
+                                                        >
+                                                            Tra cứu →
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="detail-section">
@@ -701,6 +748,35 @@ export default function CustomerProfile() {
                     </div>
                 </div>
             )}
+
+            {/* Modals */}
+            <LuckySpinModal
+                isOpen={luckySpinModalOpen}
+                onClose={() => setLuckySpinModalOpen(false)}
+                onLoginRequired={() => setLoginModalOpen(true)}
+            />
+
+            <LoginModal
+                isOpen={loginModalOpen}
+                onClose={() => setLoginModalOpen(false)}
+                onLoginSuccess={(data) => {
+                    setCustomer(data);
+                    setLoginModalOpen(false);
+                }}
+            />
+
+            <CartDrawer
+                open={cartOpen}
+                onClose={() => setCartOpen(false)}
+                cart={cart}
+                total={cartTotal}
+                onUpdateQty={updateCartQty}
+                onRemove={removeFromCart}
+                onCheckout={() => {
+                    setCartOpen(false);
+                    navigate('/shop/checkout');
+                }}
+            />
 
             <ShopFooter />
         </div>

@@ -1,24 +1,29 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@shared/context/ToastContext";
+import { useCart } from "@shared/context/CartContext";
 import ShopHeader from "../components/ShopHeader.jsx";
 import ShopFooter from "../components/ShopFooter.jsx";
-import { getCustomer } from "@shared/utils/customerSession.js";
-import { orderAPI, fetchCategories, formatVND, promotionAPI, pointsAPI } from "@shared/utils/api.js";
+import LuckySpinModal from "../components/LuckySpinModal.jsx";
+import LoginModal from "../components/LoginModal.jsx";
+import { orderAPI, fetchCategories, formatVND, promotionAPI, pointsAPI, luckySpinAPI, getAssetUrl } from "@shared/utils/api.js";
+import { getCustomerSession, getCustomer } from "@shared/utils/customerSession.js";
+import { trackBeginCheckout, trackPurchase } from "@shared/utils/analytics.js";
 import "../styles/fyd-shop.css";
 import "../styles/checkout.css";
 
 // Bank info for transfer
 const BANK_INFO = {
-    bankName: "Vietcombank",
-    bankId: "VCB",
-    accountNumber: "1234567890",
+    bankName: "MBank",
+    bankId: "MB",
+    accountNumber: "0856496582",
     accountName: "FYD FASHION CO LTD"
 };
 
 export default function Checkout() {
     const navigate = useNavigate();
     const [customer, setCustomer] = useState(null);
-    const [cart, setCart] = useState([]);
+    const { cart, cartTotal: subtotal, clearCart } = useCart();
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState("COD");
@@ -47,6 +52,16 @@ export default function Checkout() {
     const [pointsDiscount, setPointsDiscount] = useState(0);
     const [tierDiscount, setTierDiscount] = useState(0);
 
+    // Lucky Spin Coupon State
+    const [customerCoupons, setCustomerCoupons] = useState([]);
+    const [couponCode, setCouponCode] = useState("");
+    const [couponMsg, setCouponMsg] = useState({ text: "", type: "" });
+    const [luckySpinModalOpen, setLuckySpinModalOpen] = useState(false);
+    const [loginModalOpen, setLoginModalOpen] = useState(false);
+    const [couponResult, setCouponResult] = useState(null);
+    const [couponLoading, setCouponLoading] = useState(false);
+    const { showToast } = useToast();
+
     // Shipping fee
     const SHIPPING_FEE = 30000;
 
@@ -65,16 +80,7 @@ export default function Checkout() {
             shippingPhone: savedCustomer.phone || ""
         }));
 
-        // Load cart
-        const savedCart = localStorage.getItem("fyd-cart");
-        if (savedCart) {
-            const cartItems = JSON.parse(savedCart);
-            if (cartItems.length === 0) {
-                navigate("/shop");
-                return;
-            }
-            setCart(cartItems);
-        } else {
+        if (cart.length === 0) {
             navigate("/shop");
         }
 
@@ -82,11 +88,18 @@ export default function Checkout() {
         fetchCategories().then(setCategories);
     }, [navigate]);
 
+    // Track begin_checkout when cart and customer are ready
+    useEffect(() => {
+        if (customer && cart.length > 0) {
+            trackBeginCheckout(cart, subtotal);
+        }
+    }, [customer, cart.length > 0]); // Track when either becomes available
+
     // Fetch points and tier discount when customer or cart changes
     useEffect(() => {
         if (!customer || cart.length === 0) return;
 
-        const currentSubtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+        const currentSubtotal = subtotal;
 
         const fetchPointsAndDiscount = async () => {
             try {
@@ -96,17 +109,47 @@ export default function Checkout() {
                 ]);
                 setPointsInfo(pointsData);
                 setTierDiscount(Number(calcData.tierDiscount || 0));
+
+                // Fetch customer's active coupons
+                const session = getCustomerSession();
+                if (session?.token) {
+                    const coupons = await luckySpinAPI.getMyCoupons(session.token, 'active');
+                    setCustomerCoupons(Array.isArray(coupons) ? coupons : []);
+                }
             } catch (err) {
-                console.error("Failed to fetch points/discount:", err);
+                console.error("Failed to fetch points/discount/coupons:", err);
             }
         };
 
         fetchPointsAndDiscount();
     }, [customer, cart]);
 
-    const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const handleApplyCoupon = async (codeOverride = null) => {
+        const codeToApply = codeOverride || couponCode;
+        if (!codeToApply.trim()) return;
+
+        setCouponLoading(true);
+        try {
+            const session = getCustomerSession();
+            const result = await luckySpinAPI.validateCoupon(session.token, codeToApply.trim(), subtotal);
+            if (result.valid) {
+                setCouponResult(result);
+                setCouponCode(result.coupon.code);
+            } else {
+                setCouponResult(null);
+                showToast(result.message, "error");
+            }
+        } catch (err) {
+            console.error("Coupon validation error:", err);
+            showToast("Lỗi khi kiểm tra mã giảm giá", "error");
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
     const promoDiscount = promoResult?.discountAmount || 0;
-    const totalDiscount = promoDiscount + tierDiscount + pointsDiscount;
+    const couponDiscount = couponResult?.discountAmount || 0;
+    const totalDiscount = promoDiscount + couponDiscount + tierDiscount + pointsDiscount;
     const total = Math.max(0, subtotal + SHIPPING_FEE - totalDiscount);
 
     const handleApplyPromo = async () => {
@@ -116,14 +159,14 @@ export default function Checkout() {
             const result = await promotionAPI.validate(promoCode.trim(), subtotal);
             if (result.valid) {
                 setPromoResult(result);
-                alert(result.message);
+                showToast(result.message);
             } else {
                 setPromoResult(null);
-                alert(result.message);
+                showToast(result.message, "error");
             }
         } catch (err) {
             console.error("Promo error:", err);
-            alert("Lỗi khi kiểm tra mã khuyến mãi");
+            showToast("Lỗi khi kiểm tra mã khuyến mãi", "error");
         } finally {
             setPromoLoading(false);
         }
@@ -186,6 +229,7 @@ export default function Checkout() {
                 notes: formData.notes,
                 shippingFee: SHIPPING_FEE,
                 promotionCode: promoResult ? promoResult.code : null,
+                customerCouponCode: couponResult ? couponResult.coupon.code : null,
                 pointsUsed: pointsToUse,
                 items: cart.map(item => ({
                     productId: item.productId,
@@ -199,18 +243,29 @@ export default function Checkout() {
 
             const result = await orderAPI.create(orderData);
 
-            // Clear cart
-            localStorage.removeItem("fyd-cart");
+            // Navigate to success page or redirect to payment URL
+            if (result.paymentUrl) {
+                // Track purchase event before redirecting for online payment
+                trackPurchase(result, cart, total);
 
-            // Navigate to success page
-            navigate(`/shop/order-success/${result.id}`, {
-                state: { order: result, paymentMethod }
-            });
+                // For online payment, clear cart but keep order info for callback
+                clearCart();
+                window.location.href = result.paymentUrl;
+            } else {
+                // Track purchase event for COD/Bank Transfer
+                trackPurchase(result, cart, total);
+
+                // Clear cart
+                clearCart();
+                navigate(`/shop/order-success/${result.id}`, {
+                    state: { order: result, paymentMethod }
+                });
+            }
         } catch (error) {
             console.error("Failed to create order:", error);
             // Show specific error from backend if available
             const errorMsg = error.message || "Đặt hàng thất bại. Vui lòng thử lại.";
-            alert(errorMsg);
+            showToast(errorMsg, "error");
         } finally {
             setLoading(false);
         }
@@ -232,6 +287,8 @@ export default function Checkout() {
                 customer={customer}
                 categories={categories}
                 onShowAll={() => navigate('/shop')}
+                onLuckySpinClick={() => setLuckySpinModalOpen(true)}
+                onLoginClick={() => setLoginModalOpen(true)}
             />
 
             <main className="checkout-page">
@@ -355,7 +412,13 @@ export default function Checkout() {
                                             checked={paymentMethod === 'COD'}
                                             onChange={(e) => { setPaymentMethod(e.target.value); setShowQR(false); }}
                                         />
-                                        <div className="payment-icon cod">💵</div>
+                                        <div className="payment-icon cod">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="2" y="6" width="20" height="12" rx="2" />
+                                                <path d="M12 12h4" />
+                                                <circle cx="8" cy="12" r="2" />
+                                            </svg>
+                                        </div>
                                         <div className="payment-info">
                                             <span className="payment-name">Thanh toán khi nhận hàng (COD)</span>
                                             <span className="payment-desc">Thanh toán bằng tiền mặt khi nhận hàng</span>
@@ -370,7 +433,18 @@ export default function Checkout() {
                                             checked={paymentMethod === 'BANK_TRANSFER'}
                                             onChange={(e) => { setPaymentMethod(e.target.value); setShowQR(false); }}
                                         />
-                                        <div className="payment-icon bank">🏦</div>
+                                        <div className="payment-icon bank">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M3 21h18" />
+                                                <path d="M3 10h18" />
+                                                <path d="M5 6l7-3 7 3" />
+                                                <path d="M4 10v11" />
+                                                <path d="M20 10v11" />
+                                                <path d="M8 10v11" />
+                                                <path d="M12 10v11" />
+                                                <path d="M16 10v11" />
+                                            </svg>
+                                        </div>
                                         <div className="payment-info">
                                             <span className="payment-name">Chuyển khoản ngân hàng</span>
                                             <span className="payment-desc">Chuyển khoản trực tiếp đến tài khoản ngân hàng</span>
@@ -385,10 +459,53 @@ export default function Checkout() {
                                             checked={paymentMethod === 'QR_CODE'}
                                             onChange={(e) => { setPaymentMethod(e.target.value); setShowQR(true); }}
                                         />
-                                        <div className="payment-icon qr">📱</div>
+                                        <div className="payment-icon qr">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="3" y="3" width="7" height="7" />
+                                                <rect x="14" y="3" width="7" height="7" />
+                                                <rect x="3" y="14" width="7" height="7" />
+                                                <rect x="14" y="14" width="3" height="3" />
+                                                <path d="M18 14h3v3" />
+                                                <path d="M14 18h3v3" />
+                                            </svg>
+                                        </div>
                                         <div className="payment-info">
                                             <span className="payment-name">Quét mã QR (VietQR)</span>
                                             <span className="payment-desc">Quét mã QR bằng ứng dụng ngân hàng</span>
+                                        </div>
+                                    </label>
+
+                                    <label className={`payment-option ${paymentMethod === 'VNPAY' ? 'selected' : ''}`}>
+                                        <input
+                                            type="radio"
+                                            name="paymentMethod"
+                                            value="VNPAY"
+                                            checked={paymentMethod === 'VNPAY'}
+                                            onChange={(e) => { setPaymentMethod(e.target.value); setShowQR(false); }}
+                                        />
+                                        <div className="payment-icon vnpay">
+                                            <img src="https://sandbox.vnpayment.vn/paymentv2/Images/brands/logo-vnpay.png" alt="VNPay" style={{ width: 24 }} />
+                                        </div>
+                                        <div className="payment-info">
+                                            <span className="payment-name">VNPay</span>
+                                            <span className="payment-desc">Thanh toán qua cổng VNPay (Thẻ ATM, QR, Ví...)</span>
+                                        </div>
+                                    </label>
+
+                                    <label className={`payment-option ${paymentMethod === 'MOMO' ? 'selected' : ''}`}>
+                                        <input
+                                            type="radio"
+                                            name="paymentMethod"
+                                            value="MOMO"
+                                            checked={paymentMethod === 'MOMO'}
+                                            onChange={(e) => { setPaymentMethod(e.target.value); setShowQR(false); }}
+                                        />
+                                        <div className="payment-icon momo">
+                                            <img src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png" alt="MoMo" style={{ width: 24 }} />
+                                        </div>
+                                        <div className="payment-info">
+                                            <span className="payment-name">Ví MoMo</span>
+                                            <span className="payment-desc">Thanh toán qua ứng dụng MoMo</span>
                                         </div>
                                     </label>
                                 </div>
@@ -457,9 +574,15 @@ export default function Checkout() {
                                         <div key={item.itemId} className="order-item">
                                             <div className="item-image">
                                                 {item.image ? (
-                                                    <img src={item.image} alt={item.name} />
+                                                    <img src={getAssetUrl(item.image)} alt={item.name} />
                                                 ) : (
-                                                    <div className="no-image">📦</div>
+                                                    <div className="no-image">
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                                            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+                                                            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                                                            <line x1="12" y1="22.08" x2="12" y2="12" />
+                                                        </svg>
+                                                    </div>
                                                 )}
                                                 <span className="item-qty">{item.qty}</span>
                                             </div>
@@ -494,7 +617,59 @@ export default function Checkout() {
                                         )}
                                     </div>
                                     {promoResult && (
-                                        <p className="promo-msg success">✓ Đã áp dụng mã {promoResult.code}</p>
+                                        <p className="promo-msg success">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                            Đã áp dụng mã {promoResult.code}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Lucky Spin Coupon Section */}
+                                <div className="promo-section customer-coupon-section">
+                                    <h3 className="section-title">Voucher may mắn</h3>
+
+                                    {customerCoupons.length > 0 && !couponResult && (
+                                        <div className="available-coupons">
+                                            <p className="small-label">Voucher trúng thưởng của bạn:</p>
+                                            <div className="coupon-scroll-list">
+                                                {customerCoupons.map(c => (
+                                                    <button
+                                                        key={c.id}
+                                                        className="mini-coupon-btn"
+                                                        onClick={() => handleApplyCoupon(c.code)}
+                                                    >
+                                                        {c.code}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="promo-input-group">
+                                        <input
+                                            type="text"
+                                            placeholder="Nhập mã voucher..."
+                                            value={couponCode}
+                                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                            disabled={couponResult !== null}
+                                        />
+                                        {couponResult ? (
+                                            <button className="promo-remove-btn" onClick={() => { setCouponResult(null); setCouponCode(""); }}>Hủy</button>
+                                        ) : (
+                                            <button className="promo-apply-btn" onClick={() => handleApplyCoupon()} disabled={couponLoading || !couponCode}>
+                                                {couponLoading ? '...' : 'Dùng'}
+                                            </button>
+                                        )}
+                                    </div>
+                                    {couponResult && (
+                                        <p className="promo-msg success">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                            {couponResult.message}
+                                        </p>
                                     )}
                                 </div>
 
@@ -541,6 +716,13 @@ export default function Checkout() {
                                         </div>
                                     )}
 
+                                    {couponDiscount > 0 && (
+                                        <div className="total-row discount">
+                                            <span>Voucher may mắn ({couponResult?.coupon?.code})</span>
+                                            <span>-{formatVND(couponDiscount)}</span>
+                                        </div>
+                                    )}
+
                                     {pointsDiscount > 0 && (
                                         <div className="total-row discount">
                                             <span>Dùng điểm thưởng</span>
@@ -583,6 +765,21 @@ export default function Checkout() {
             </main>
 
             <ShopFooter />
+
+            <LuckySpinModal
+                isOpen={luckySpinModalOpen}
+                onClose={() => setLuckySpinModalOpen(false)}
+                onLoginRequired={() => setLoginModalOpen(true)}
+            />
+
+            <LoginModal
+                isOpen={loginModalOpen}
+                onClose={() => setLoginModalOpen(false)}
+                onLoginSuccess={(data) => {
+                    setCustomer(data);
+                    setLoginModalOpen(false);
+                }}
+            />
         </div>
     );
 }

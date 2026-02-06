@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { productAPI, categoryAPI, formatVND, aiAPI, brandAPI, colorAPI, sizeAPI } from "@shared/utils/api.js";
+import { productAPI, categoryAPI, formatVND, aiAPI, brandAPI, colorAPI, sizeAPI, getAssetUrl } from "@shared/utils/api.js";
+import { useToast } from "@shared/context/ToastContext";
+import { useConfirm } from "@shared/context/ConfirmContext";
+import { useTranslation } from "react-i18next";
+import ImportProducts from "../components/ImportProducts";
 import "../styles/dashboard.css";
 import "../styles/pages.css";
+import "../styles/admin-forms.css";
 
 const PLACEHOLDER_IMG = "https://placehold.co/400x400/f5f5f5/999?text=No+Image";
 
@@ -33,10 +38,13 @@ function Modal({ open, title, children, onClose }) {
   );
 }
 
-function ImageGalleryModal({ open, product, onClose, onSave }) {
+function ImageGalleryModal({ open, product, onClose, onSave, loadProducts }) {
+  const { t } = useTranslation();
   const [primaryId, setPrimaryId] = useState(null);
   const [hoverId, setHoverId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const { showConfirm } = useConfirm();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (product && product.images && product.images.length > 0) {
@@ -56,7 +64,7 @@ function ImageGalleryModal({ open, product, onClose, onSave }) {
 
   const handleSave = async () => {
     if (!primaryId) {
-      alert("Vui lòng chọn ảnh đại diện");
+      showToast(t("products.msg_save_error_no_primary"), "error");
       return;
     }
     setSaving(true);
@@ -64,7 +72,7 @@ function ImageGalleryModal({ open, product, onClose, onSave }) {
       await onSave(product.id, primaryId, hoverId);
       onClose();
     } catch (err) {
-      alert("Lỗi khi lưu: " + err.message);
+      showToast(t("products.msg_save_error") + ": " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -78,7 +86,7 @@ function ImageGalleryModal({ open, product, onClose, onSave }) {
     <div className="modalBackdrop" onMouseDown={onClose}>
       <div className="modal imageGalleryModal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modalHead">
-          <div className="modalTitle">Quản lý ảnh - {product.name}</div>
+          <div className="modalTitle">{t("products.gallery_title", { name: product.name })}</div>
           <button className="iconBtn" type="button" onClick={onClose}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6L6 18M6 6l12 12" />
@@ -87,25 +95,25 @@ function ImageGalleryModal({ open, product, onClose, onSave }) {
         </div>
         <div className="modalBody">
           {images.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#666' }}>Sản phẩm này chưa có ảnh</p>
+            <p style={{ textAlign: 'center', color: '#666' }}>{t("products.gallery_empty")}</p>
           ) : (
             <>
               {/* Preview section */}
               <div style={{ display: 'flex', gap: 24, marginBottom: 24, justifyContent: 'center' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <p style={{ marginBottom: 8, fontWeight: 500, color: '#333' }}>Ảnh đại diện</p>
+                  <p style={{ marginBottom: 8, fontWeight: 500, color: '#333' }}>{t("products.gallery_primary")}</p>
                   <div style={{
                     width: 150, height: 150, border: '2px solid #000', borderRadius: 8,
-                    backgroundImage: primaryImg ? `url(${primaryImg.imageUrl})` : 'none',
+                    backgroundImage: primaryImg ? `url(${getAssetUrl(primaryImg.imageUrl)})` : 'none',
                     backgroundColor: '#f5f5f5',
                     backgroundSize: 'cover', backgroundPosition: 'center'
                   }} />
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <p style={{ marginBottom: 8, fontWeight: 500, color: '#333' }}>Ảnh hover</p>
+                  <p style={{ marginBottom: 8, fontWeight: 500, color: '#333' }}>{t("products.gallery_hover")}</p>
                   <div style={{
                     width: 150, height: 150, border: '2px dashed #999', borderRadius: 8,
-                    backgroundImage: hoverImg ? `url(${hoverImg.imageUrl})` : 'none',
+                    backgroundImage: hoverImg ? `url(${getAssetUrl(hoverImg.imageUrl)})` : 'none',
                     backgroundColor: '#f5f5f5',
                     backgroundSize: 'cover', backgroundPosition: 'center'
                   }} />
@@ -138,7 +146,7 @@ function ImageGalleryModal({ open, product, onClose, onSave }) {
                       }}
                     >
                       <img
-                        src={img.imageUrl}
+                        src={getAssetUrl(img.imageUrl)}
                         alt={img.altText || 'Product image'}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
@@ -148,13 +156,13 @@ function ImageGalleryModal({ open, product, onClose, onSave }) {
                           <span style={{
                             background: 'var(--admin-accent)', color: '#0a0a0f', fontSize: 9, padding: '2px 6px',
                             borderRadius: 4, fontWeight: 700
-                          }}>ĐẠI DIỆN</span>
+                          }}>{t("products.gallery_badge_primary")}</span>
                         )}
                         {isHover && (
                           <span style={{
                             background: '#666', color: '#fff', fontSize: 9, padding: '2px 6px',
                             borderRadius: 4, fontWeight: 700
-                          }}>HOVER</span>
+                          }}>{t("products.gallery_badge_hover")}</span>
                         )}
                       </div>
 
@@ -170,12 +178,13 @@ function ImageGalleryModal({ open, product, onClose, onSave }) {
                         }}
                         onClick={async (e) => {
                           e.stopPropagation();
-                          if (!window.confirm("Xóa ảnh này?")) return;
+                          const confirmed = await showConfirm(t("common.confirm_delete_title"), t("products.gallery_delete_confirm"));
+                          if (!confirmed) return;
                           try {
                             await productAPI.deleteImage(product.id, img.id);
                             await loadProducts();
                           } catch (err) {
-                            alert("Lỗi khi xóa: " + err.message);
+                            showToast(t("products.msg_delete_error") + ": " + err.message, "error");
                           }
                         }}
                       >
@@ -196,7 +205,7 @@ function ImageGalleryModal({ open, product, onClose, onSave }) {
                             color: '#fff', fontSize: 11, cursor: 'pointer'
                           }}
                         >
-                          Đại diện
+                          {t("products.gallery_btn_primary")}
                         </button>
                         <button
                           type="button"
@@ -208,7 +217,7 @@ function ImageGalleryModal({ open, product, onClose, onSave }) {
                             color: '#fff', fontSize: 11, cursor: 'pointer'
                           }}
                         >
-                          Hover
+                          {t("products.gallery_btn_hover")}
                         </button>
                       </div>
                     </div>
@@ -219,9 +228,9 @@ function ImageGalleryModal({ open, product, onClose, onSave }) {
           )}
         </div>
         <div className="modalActions">
-          <button className="btnGhost" type="button" onClick={onClose}>Hủy</button>
+          <button className="btnGhost" type="button" onClick={onClose}>{t("common.cancel")}</button>
           <button className="btnPrimary" type="button" onClick={handleSave} disabled={saving || images.length === 0}>
-            {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+            {saving ? t("products.gallery_saving") : t("products.gallery_save")}
           </button>
         </div>
       </div>
@@ -230,13 +239,15 @@ function ImageGalleryModal({ open, product, onClose, onSave }) {
   );
 }
 
-function stockBadge(stock) {
-  if (stock <= 0) return { cls: "out", label: "Hết hàng" };
-  if (stock <= 6) return { cls: "low", label: "Sắp hết" };
-  return { cls: "", label: `Tồn: ${stock}` };
+function StockBadge({ stock }) {
+  const { t } = useTranslation();
+  if (stock <= 0) return <span className="badgeStock out">{t("products.stock_out")}</span>;
+  if (stock <= 6) return <span className="badgeStock low">{t("products.stock_low")}</span>;
+  return <span className="badgeStock">{t("products.stock_count", { count: stock })}</span>;
 }
 
 export default function Products() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -246,6 +257,7 @@ export default function Products() {
   const [editingId, setEditingId] = useState(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryProduct, setGalleryProduct] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const editing = useMemo(
     () => products.find((p) => p.id === editingId) || null,
@@ -268,12 +280,15 @@ export default function Products() {
     initialColorId: "",
     isFeatured: false,
     isNew: false,
+    isFlashSale: false,
     status: "ACTIVE"
   });
   const [brands, setBrands] = useState([]);
   const [colors, setColors] = useState([]);
   const [sizes, setSizes] = useState([]);
   const [aiLoading, setAiLoading] = useState({ description: false, category: false, shortDesc: false });
+  const { showToast } = useToast();
+  const { showConfirm } = useConfirm();
 
   // Load products from API
   useEffect(() => {
@@ -320,6 +335,7 @@ export default function Products() {
       initialColorId: "",
       isFeatured: false,
       isNew: false,
+      isFlashSale: false,
       status: "ACTIVE"
     });
     setEditOpen(true);
@@ -343,6 +359,7 @@ export default function Products() {
       initialColorId: "",
       isFeatured: p.isFeatured || false,
       isNew: p.isNew || false,
+      isFlashSale: p.isFlashSale === true,
       status: p.status || "ACTIVE"
     });
     setEditOpen(true);
@@ -376,6 +393,7 @@ export default function Products() {
       material: form.material.trim(),
       isFeatured: form.isFeatured,
       isNew: form.isNew,
+      isFlashSale: form.isFlashSale,
       status: form.status,
       initialStock: form.initialStock ? Number(form.initialStock) : 0,
       initialSizeId: form.initialSizeId ? Number(form.initialSizeId) : null,
@@ -383,7 +401,7 @@ export default function Products() {
     };
 
     if (!payload.sku || !payload.name || !payload.basePrice) {
-      alert("Vui lòng nhập SKU, tên và giá sản phẩm.");
+      showToast(t("products.msg_validate_error"), "error");
       return;
     }
 
@@ -395,8 +413,9 @@ export default function Products() {
       }
       await loadProducts();
       setEditOpen(false);
+      showToast(editingId ? t("products.msg_update_success") : t("products.msg_save_success"));
     } catch (err) {
-      alert("Lỗi: " + (err.message || "Không thể lưu sản phẩm"));
+      showToast(t("common.update_error") + ": " + (err.message || t("products.msg_save_error")), "error");
     }
   };
 
@@ -433,9 +452,9 @@ export default function Products() {
     if (product.images && product.images.length > 0) {
       // Sort by sortOrder and get first image
       const sorted = [...product.images].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-      return sorted[0].imageUrl;
+      return getAssetUrl(sorted[0].imageUrl);
     }
-    if (product.thumbnail) return product.thumbnail;
+    if (product.thumbnail) return getAssetUrl(product.thumbnail);
     return PLACEHOLDER_IMG;
   };
 
@@ -443,10 +462,10 @@ export default function Products() {
     return (
       <div className="card">
         <div className="cardHead">
-          <div className="cardTitle">Sản phẩm</div>
+          <div className="cardTitle">{t("products.title")}</div>
         </div>
         <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>
-          Đang tải dữ liệu...
+          {t("common.loading")}
         </div>
       </div>
     );
@@ -456,18 +475,26 @@ export default function Products() {
     <div className="card">
       <div className="cardHead">
         <div>
-          <div className="cardTitle">Sản phẩm</div>
-          <div className="cardSub">{products.length} sản phẩm • Click vào ảnh để quản lý gallery</div>
+          <div className="cardTitle">{t("products.title")}</div>
+          <div className="cardSub">{t("products.subtitle", { count: products.length })}</div>
         </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
           <input
             className="miniInput"
-            placeholder="Tìm SKU/tên/category…"
+            placeholder={t("products.search_placeholder")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          <button className="btnPrimary" type="button" onClick={openAdd}>+ Thêm sản phẩm</button>
+          <button className="btnGhost" type="button" onClick={() => setImportOpen(true)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            {t("products.btn_import")}
+          </button>
+          <button className="btnPrimary" type="button" onClick={openAdd}>{t("products.btn_add")}</button>
         </div>
       </div>
 
@@ -478,7 +505,7 @@ export default function Products() {
           onClick={() => setSelectedCategory("all")}
           type="button"
         >
-          Tất cả<span className="count">{categoryCounts.all || 0}</span>
+          {t("products.tab_all")}<span className="count">{categoryCounts.all || 0}</span>
         </button>
         {uniqueCategories.map(cat => (
           <button
@@ -494,7 +521,6 @@ export default function Products() {
 
       <div className="gridCards">
         {filtered.map((p) => {
-          const b = stockBadge(p.totalStock || 0);
           const imgUrl = getProductImage(p);
           return (
             <div className="pCard" key={p.id}>
@@ -507,7 +533,7 @@ export default function Products() {
                   cursor: 'pointer'
                 }}
                 onClick={() => openGallery(p)}
-                title="Click để quản lý ảnh"
+                title={t("products.images")}
               >
                 {p.images && p.images.length > 1 && (
                   <span style={{
@@ -515,7 +541,7 @@ export default function Products() {
                     background: 'rgba(0,0,0,0.7)', color: '#fff',
                     padding: '2px 8px', borderRadius: 4, fontSize: 12
                   }}>
-                    +{p.images.length - 1} ảnh
+                    +{p.images.length - 1} {t("products.images")}
                   </span>
                 )}
               </div>
@@ -524,29 +550,31 @@ export default function Products() {
                   <div className="pName">{p.name}</div>
                   <div className="pMeta">{p.brand || 'FYD'} • {p.category} • <span className="mono">{p.sku}</span></div>
                 </div>
-                <span className={`badgeStock ${b.cls}`}>{b.label}</span>
+                <StockBadge stock={p.totalStock || 0} />
               </div>
 
               <div className="pBottom">
                 <div className="pPrice">{formatVND(p.salePrice || p.basePrice || 0)}</div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button className="linkBtn" type="button" onClick={() => openEdit(p)}>Sửa</button>
-                  <button className="linkBtn" type="button" onClick={() => openGallery(p)}>Ảnh</button>
+                  <button className="linkBtn" type="button" onClick={() => openEdit(p)}>{t("products.edit")}</button>
+                  <button className="linkBtn" type="button" onClick={() => openGallery(p)}>{t("products.images")}</button>
                   <button
                     className="linkBtn"
                     type="button"
                     style={{ color: '#ff6b6b' }}
                     onClick={async () => {
-                      if (!window.confirm(`Bạn chắc chắn muốn xóa sản phẩm "${p.name}"?`)) return;
+                      const confirmed = await showConfirm(t("common.confirm_delete_title"), t("products.msg_delete_confirm", { name: p.name }));
+                      if (!confirmed) return;
                       try {
                         await productAPI.delete(p.id);
                         await loadProducts();
+                        showToast(t("products.msg_delete_success"));
                       } catch (err) {
-                        alert('Lỗi khi xóa: ' + err.message);
+                        showToast(t("products.msg_delete_error") + ": " + err.message, "error");
                       }
                     }}
                   >
-                    Xóa
+                    {t("products.delete")}
                   </button>
                 </div>
               </div>
@@ -555,275 +583,281 @@ export default function Products() {
         })}
       </div>
 
-      {/* Edit Modal */}
-      <Modal open={editOpen} title={editing ? `Sửa sản phẩm • ${editing.sku}` : "Thêm sản phẩm mới"} onClose={() => setEditOpen(false)}>
-        <div className="product-form">
+      <Modal open={editOpen} title={editing ? t("products.modal_edit_title", { sku: editing.sku }) : t("products.modal_add_title")} onClose={() => setEditOpen(false)}>
+        <div className="premium-form">
           {/* Basic Info */}
-          <div className="form-section-title">Thông tin cơ bản</div>
-          <div className="formGrid">
-            <label className="field">
-              <span>SKU *</span>
-              <input
-                value={form.sku}
-                onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
-                placeholder="VD: FYD-TS-001"
-              />
-            </label>
-            <label className="field">
-              <span>Tên sản phẩm *</span>
-              <input
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="VD: Áo thun FYD Premium"
-              />
-            </label>
-            <label className="field">
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>Danh mục</span>
-                <button
-                  type="button"
-                  style={{ fontSize: 10, background: 'none', border: 'none', color: 'var(--admin-accent)', cursor: 'pointer', padding: 0 }}
-                  disabled={!form.name || aiLoading.category}
-                  onClick={async () => {
-                    setAiLoading(prev => ({ ...prev, category: true }));
-                    try {
-                      const res = await aiAPI.suggestCategory(form.name);
-                      if (res.success && res.category) {
-                        const target = categories.find(c => c.name.toLowerCase().includes(res.category.toLowerCase()));
-                        if (target) setForm(f => ({ ...f, categoryId: String(target.id) }));
-                        else alert(`AI gợi ý: ${res.category} (Không tìm thấy danh mục tương ứng)`);
+          <div className="form-group">
+            <div className="form-group-title">{t("products.section_basic")}</div>
+            <div className="form-row">
+              <label className="admin-field">
+                <span>{t("products.sku")} *</span>
+                <input
+                  value={form.sku}
+                  onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+                  placeholder="VD: FYD-TS-001"
+                />
+              </label>
+              <label className="admin-field">
+                <span>{t("products.product_name")} *</span>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="VD: Áo thun FYD Premium"
+                />
+              </label>
+            </div>
+            <div className="form-row" style={{ marginTop: 16 }}>
+              <label className="admin-field">
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>{t("products.category")}</span>
+                  <button
+                    type="button"
+                    style={{ fontSize: 10, background: 'none', border: 'none', color: 'var(--admin-accent)', cursor: 'pointer', padding: 0 }}
+                    disabled={!form.name || aiLoading.category}
+                    onClick={async () => {
+                      setAiLoading(prev => ({ ...prev, category: true }));
+                      try {
+                        const res = await aiAPI.suggestCategory(form.name);
+                        if (res.success && res.category) {
+                          const target = categories.find(c => c.name.toLowerCase().includes(res.category.toLowerCase()));
+                          if (target) setForm(f => ({ ...f, categoryId: String(target.id) }));
+                        }
+                      } finally {
+                        setAiLoading(prev => ({ ...prev, category: false }));
                       }
-                    } finally {
-                      setAiLoading(prev => ({ ...prev, category: false }));
-                    }
-                  }}
+                    }}
+                  >
+                    {aiLoading.category ? "..." : "AI ✨"}
+                  </button>
+                </div>
+                <select
+                  value={form.categoryId}
+                  onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value }))}
                 >
-                  {aiLoading.category ? "..." : "AI Gợi ý"}
-                </button>
-              </div>
-              <select
-                value={form.categoryId}
-                onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value }))}
-                className="form-select"
-              >
-                <option value="">-- Chọn danh mục --</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>Thương hiệu</span>
-              <select
-                value={form.brandId}
-                onChange={(e) => setForm((f) => ({ ...f, brandId: e.target.value }))}
-                className="form-select"
-              >
-                <option value="">-- Chọn thương hiệu --</option>
-                {brands.map(brand => (
-                  <option key={brand.id} value={brand.id}>{brand.name}</option>
-                ))}
-              </select>
-            </label>
+                  <option value="">-- {t("products.category")} --</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="admin-field">
+                <span>{t("products.brand")}</span>
+                <select
+                  value={form.brandId}
+                  onChange={(e) => setForm((f) => ({ ...f, brandId: e.target.value }))}
+                >
+                  <option value="">-- {t("products.brand")} --</option>
+                  {brands.map(brand => (
+                    <option key={brand.id} value={brand.id}>{brand.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="admin-field">
+                <span>{t("products.material")}</span>
+                <input
+                  value={form.material}
+                  onChange={(e) => setForm((f) => ({ ...f, material: e.target.value }))}
+                  placeholder="Cotton 100%..."
+                />
+              </label>
+            </div>
           </div>
 
-          {/* Pricing & Initial Stock */}
-          <div className="form-section-title" style={{ marginTop: 20 }}>Giá cả & Kho hàng ban đầu</div>
-          <div className="formGrid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-            <label className="field">
-              <span>Giá gốc * (VND)</span>
-              <input
-                type="number"
-                value={form.basePrice}
-                onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
-                placeholder="299000"
-              />
-            </label>
-            <label className="field">
-              <span>Giá khuyến mãi</span>
-              <input
-                type="number"
-                value={form.salePrice}
-                onChange={(e) => setForm((f) => ({ ...f, salePrice: e.target.value }))}
-                placeholder="249000"
-              />
-            </label>
-            <label className="field">
-              <span>Giá vốn</span>
-              <input
-                type="number"
-                value={form.costPrice}
-                onChange={(e) => setForm((f) => ({ ...f, costPrice: e.target.value }))}
-                placeholder="150000"
-              />
-            </label>
-            <label className="field">
-              <span>{editing ? "Tổng tồn kho hiện tại" : "Số lượng nhập kho *"}</span>
-              <input
-                type="number"
-                value={form.initialStock}
-                onChange={(e) => setForm((f) => ({ ...f, initialStock: e.target.value }))}
-                placeholder="100"
-                disabled={!!editing}
-              />
-            </label>
+          {/* Pricing & Stock */}
+          <div className="form-group">
+            <div className="form-group-title">{t("products.section_pricing")}</div>
+            <div className="form-row four-col">
+              <label className="admin-field">
+                <span>{t("products.base_price")} *</span>
+                <input
+                  type="number"
+                  value={form.basePrice}
+                  onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
+                />
+              </label>
+              <label className="admin-field">
+                <span>{t("products.sale_price")}</span>
+                <input
+                  type="number"
+                  value={form.salePrice}
+                  onChange={(e) => setForm((f) => ({ ...f, salePrice: e.target.value }))}
+                />
+              </label>
+              <label className="admin-field">
+                <span>{t("products.cost_price")}</span>
+                <input
+                  type="number"
+                  value={form.costPrice}
+                  onChange={(e) => setForm((f) => ({ ...f, costPrice: e.target.value }))}
+                />
+              </label>
+              <label className="admin-field">
+                <span>{editing ? t("products.stock_current") : t("products.stock_label")}</span>
+                <input
+                  type="number"
+                  value={form.initialStock}
+                  onChange={(e) => setForm((f) => ({ ...f, initialStock: e.target.value }))}
+                  disabled={!!editing}
+                />
+              </label>
+            </div>
 
             {!editing && (
-              <>
-                <label className="field">
-                  <span>Kích thước (Size)</span>
+              <div className="form-row" style={{ marginTop: 16 }}>
+                <label className="admin-field">
+                  <span>{t("products.size")}</span>
                   <select
-                    className="form-select"
                     value={form.initialSizeId}
                     onChange={(e) => setForm(f => ({ ...f, initialSizeId: e.target.value }))}
                   >
-                    <option value="">-- Mặc định (F) --</option>
+                    <option value="">-- Size --</option>
                     {sizes.map(s => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
                 </label>
-                <label className="field">
-                  <span>Màu sắc (Color)</span>
+                <label className="admin-field">
+                  <span>{t("products.color")}</span>
                   <select
-                    className="form-select"
                     value={form.initialColorId}
                     onChange={(e) => setForm(f => ({ ...f, initialColorId: e.target.value }))}
                   >
-                    <option value="">-- Mặc định --</option>
+                    <option value="">-- Color --</option>
                     {colors.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
                 </label>
-              </>
+              </div>
             )}
           </div>
 
           {/* Description */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
-            <div className="form-section-title" style={{ margin: 0 }}>Mô tả</div>
-            <button
-              type="button"
-              className="btnGhost"
-              style={{ fontSize: 11, padding: '4px 12px' }}
-              disabled={!form.name || aiLoading.description}
-              onClick={async () => {
-                if (!form.name) return;
-                setAiLoading(prev => ({ ...prev, description: true }));
-                try {
-                  const categoryName = categories.find(c => String(c.id) === form.categoryId)?.name || '';
-                  const res = await aiAPI.generateDescription(form.name, categoryName);
-                  if (res.success && res.generatedDescription) {
-                    setForm(f => ({ ...f, description: res.generatedDescription }));
-                  }
-                } catch (err) {
-                  console.error('AI description generation failed:', err);
-                } finally {
-                  setAiLoading(prev => ({ ...prev, description: false }));
-                }
-              }}
-            >
-              {aiLoading.description ? 'Đang tạo...' : 'AI Sinh mô tả'}
-            </button>
-          </div>
-          <div className="formGrid" style={{ marginTop: 12 }}>
-            <label className="field" style={{ gridColumn: '1 / -1' }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>Mô tả ngắn</span>
-                <button
-                  type="button"
-                  style={{ fontSize: 10, background: 'none', border: 'none', color: 'var(--admin-accent)', cursor: 'pointer', padding: 0 }}
-                  disabled={!form.name || aiLoading.shortDesc}
-                  onClick={async () => {
-                    setAiLoading(prev => ({ ...prev, shortDesc: true }));
-                    try {
-                      const res = await aiAPI.generateShortDescription(form.name);
-                      if (res.success && res.shortDescription) {
-                        setForm(f => ({ ...f, shortDescription: res.shortDescription }));
-                      }
-                    } finally {
-                      setAiLoading(prev => ({ ...prev, shortDesc: false }));
+          <div className="form-group">
+            <div className="form-group-title">
+              {t("products.section_description")}
+              <button
+                type="button"
+                className="btnGhost"
+                style={{ fontSize: 10, padding: '2px 8px', marginLeft: 8 }}
+                disabled={!form.name || aiLoading.description}
+                onClick={async () => {
+                  setAiLoading(prev => ({ ...prev, description: true }));
+                  try {
+                    const categoryName = categories.find(c => String(c.id) === form.categoryId)?.name || '';
+                    const res = await aiAPI.generateDescription(form.name, categoryName);
+                    if (res.success && res.generatedDescription) {
+                      setForm(f => ({ ...f, description: res.generatedDescription }));
                     }
-                  }}
-                >
-                  {aiLoading.shortDesc ? "..." : "AI Gợi ý"}
-                </button>
-              </div>
-              <input
-                value={form.shortDescription}
-                onChange={(e) => setForm((f) => ({ ...f, shortDescription: e.target.value }))}
-                placeholder="Mô tả ngắn gọn về sản phẩm..."
-              />
-            </label>
-            <label className="field" style={{ gridColumn: '1 / -1' }}>
-              <span>Mô tả chi tiết</span>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Mô tả chi tiết về sản phẩm, chất liệu, kiểu dáng..."
-                rows={3}
-                style={{
-                  width: '100%',
-                  resize: 'vertical',
-                  fontFamily: 'inherit',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--admin-border)',
-                  background: 'var(--glass-bg)',
-                  color: 'var(--admin-text)'
+                  } finally {
+                    setAiLoading(prev => ({ ...prev, description: false }));
+                  }
                 }}
-              />
-            </label>
-          </div>
-
-          {/* Additional Info */}
-          <div className="form-section-title" style={{ marginTop: 20 }}>Thông tin bổ sung</div>
-          <div className="formGrid">
-            <label className="field">
-              <span>Chất liệu</span>
-              <input
-                value={form.material}
-                onChange={(e) => setForm((f) => ({ ...f, material: e.target.value }))}
-                placeholder="VD: Cotton 100%"
-              />
-            </label>
-            <label className="field">
-              <span>Trạng thái</span>
-              <select
-                value={form.status}
-                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-                className="form-select"
               >
-                <option value="ACTIVE">Đang bán</option>
-                <option value="INACTIVE">Ngừng bán</option>
-                <option value="DRAFT">Nháp</option>
-              </select>
+                {aiLoading.description ? "..." : "AI ✨"}
+              </button>
+            </div>
+            <div className="form-row">
+              <label className="admin-field full">
+                <span>{t("products.short_desc")}</span>
+                <input
+                  value={form.shortDescription}
+                  onChange={(e) => setForm((f) => ({ ...f, shortDescription: e.target.value }))}
+                />
+              </label>
+            </div>
+            <div className="form-row" style={{ marginTop: 16 }}>
+              <label className="admin-field full">
+                <span>{t("products.full_desc")}</span>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  rows={4}
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Status Toggles */}
+          <div className="toggle-group">
+            <label className="admin-toggle">
+              <input
+                type="checkbox"
+                hidden
+                checked={form.isFeatured}
+                onChange={(e) => setForm((f) => ({ ...f, isFeatured: e.target.checked }))}
+              />
+              <div className="toggle-slider"></div>
+              <div className="toggle-label">
+                <span className="toggle-title">{t("products.is_featured")}</span>
+                <span className="toggle-desc">Hiện trang chủ</span>
+              </div>
+            </label>
+
+            <label className="admin-toggle">
+              <input
+                type="checkbox"
+                hidden
+                checked={form.isNew}
+                onChange={(e) => setForm((f) => ({ ...f, isNew: e.target.checked }))}
+              />
+              <div className="toggle-slider"></div>
+              <div className="toggle-label">
+                <span className="toggle-title">{t("products.is_new")}</span>
+                <span className="toggle-desc">Tag "Mới"</span>
+              </div>
+            </label>
+
+            <label className={`admin-toggle ${form.isFlashSale ? 'flash-sale-highlight' : ''}`}>
+              <input
+                type="checkbox"
+                hidden
+                checked={form.isFlashSale}
+                onChange={(e) => setForm((f) => ({ ...f, isFlashSale: e.target.checked }))}
+              />
+              <div className="toggle-slider"></div>
+              <div className="toggle-label">
+                <span className="toggle-title">{t("products.is_flash_sale")}</span>
+                <span className="toggle-desc">⚡ Cháy túi khách</span>
+              </div>
+            </label>
+
+            <label className="admin-toggle">
+              <input
+                type="checkbox"
+                hidden
+                checked={form.status === "ACTIVE"}
+                onChange={(e) => setForm((f) => ({ ...f, status: e.target.checked ? "ACTIVE" : "INACTIVE" }))}
+              />
+              <div className="toggle-slider"></div>
+              <div className="toggle-label">
+                <span className="toggle-title">{t("common.activated")}</span>
+                <span className="toggle-desc">Đang kinh doanh</span>
+              </div>
             </label>
           </div>
 
-          {/* Image Upload Section - Only show when editing existing product */}
+          {/* Inline Gallery */}
           {editing && (
             <>
-              <div className="form-section-title" style={{ marginTop: 20 }}>Hình ảnh sản phẩm</div>
-              <div className="image-upload-section">
-                <div className="current-images">
+              <div className="form-group-title" style={{ marginTop: 24 }}>{t("products.images")}</div>
+              <div className="inlineGallery">
+                <div className="image-grid">
                   {editing.images && editing.images.length > 0 ? (
-                    editing.images.map((img, idx) => (
-                      <div key={img.id || idx} className="image-preview-item">
-                        <img src={img.imageUrl} alt={`Product ${idx + 1}`} />
-                        {img.isPrimary && <span className="primary-badge">Chính</span>}
+                    editing.images.map((img) => (
+                      <div key={img.id} className="image-item">
+                        <img src={getAssetUrl(img.imageUrl)} alt="product" />
                         <button
                           type="button"
                           className="delete-img-btn"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            if (!window.confirm("Xóa ảnh này?")) return;
+                          onClick={async () => {
+                            const confirmed = await showConfirm(t("common.confirm_delete_title"), t("products.gallery_delete_confirm"));
+                            if (!confirmed) return;
                             try {
                               await productAPI.deleteImage(editing.id, img.id);
                               await loadProducts();
                             } catch (err) {
-                              alert("Lỗi khi xóa: " + err.message);
+                              showToast(t("products.msg_delete_error") + ": " + err.message, "error");
                             }
                           }}
                         >
@@ -832,7 +866,7 @@ export default function Products() {
                       </div>
                     ))
                   ) : (
-                    <div className="no-images-text">Chưa có hình ảnh. Thêm ảnh sau khi tạo sản phẩm.</div>
+                    <div className="no-images-text">{t("products.no_images")}</div>
                   )}
                 </div>
                 <label className="upload-btn">
@@ -846,57 +880,31 @@ export default function Products() {
                       try {
                         await productAPI.uploadImage(editing.id, file);
                         await loadProducts();
-                        // Refresh editing product
-                        const updated = await productAPI.getById(editing.id);
-                        setEditingId(updated.id);
                       } catch (err) {
-                        alert('Lỗi upload ảnh: ' + err.message);
+                        showToast(t("products.msg_save_error") + ": " + err.message, "error");
                       }
                       e.target.value = '';
                     }}
                   />
-                  + Thêm ảnh mới
+                  {t("products.btn_add_image")}
                 </label>
               </div>
               <p style={{ fontSize: 11, color: 'var(--admin-text-muted-2)', marginTop: 8 }}>
-                Nhấn vào nút "Ảnh" bên bảng sản phẩm để quản lý ảnh chi tiết.
+                {t("products.manage_gallery_hint")}
               </p>
             </>
           )}
 
           {!editing && (
             <p style={{ fontSize: 12, color: 'var(--admin-text-muted)', marginTop: 16, padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px dashed var(--admin-border)' }}>
-              Bạn có thể thêm hình ảnh sau khi tạo sản phẩm bằng cách nhấn nút "Ảnh" trong bảng sản phẩm.
+              {t("products.add_images_hint")}
             </p>
           )}
-
-          <div style={{ display: 'flex', gap: 24, marginTop: 16 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={form.isFeatured}
-                onChange={(e) => setForm((f) => ({ ...f, isFeatured: e.target.checked }))}
-                style={{ width: 16, height: 16 }}
-              />
-              <span style={{ fontSize: 13, color: 'var(--admin-text)' }}>Sản phẩm nổi bật</span>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={form.isNew}
-                onChange={(e) => setForm((f) => ({ ...f, isNew: e.target.checked }))}
-                style={{ width: 16, height: 16 }}
-              />
-              <span style={{ fontSize: 13, color: 'var(--admin-text)' }}>Sản phẩm mới</span>
-            </label>
-          </div>
         </div>
 
         <div className="modalActions">
-          <button className="btnGhost" type="button" onClick={() => setEditOpen(false)}>Hủy</button>
-          <button className="btnPrimary" type="button" onClick={save}>
-            {editing ? 'Cập nhật' : 'Thêm sản phẩm'}
-          </button>
+          <button className="btnGhost" type="button" onClick={() => setEditOpen(false)}>{t("common.cancel")}</button>
+          <button className="btnPrimary" type="button" onClick={save}>{t("common.save")}</button>
         </div>
       </Modal>
 
@@ -906,6 +914,14 @@ export default function Products() {
         product={galleryProduct}
         onClose={() => setGalleryOpen(false)}
         onSave={handleSaveImages}
+        loadProducts={loadProducts}
+      />
+
+      {/* Import Products Modal */}
+      <ImportProducts
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onSuccess={() => loadProducts()}
       />
     </div>
   );

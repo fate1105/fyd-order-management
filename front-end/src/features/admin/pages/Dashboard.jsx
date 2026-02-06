@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import "../styles/dashboard.css";
 import api, { formatVND } from "@shared/utils/api.js";
 import { aiAPI } from "@shared/utils/api.js";
+import { useWebSocket } from "@shared/hooks/useWebSocket";
+import { useToast } from "@shared/context/ToastContext";
+import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 
 // SVG Icons
 const TrendUpIcon = () => (
@@ -53,6 +57,12 @@ const CheckIcon = () => (
   </svg>
 );
 
+const NovaIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" />
+  </svg>
+);
+
 const CloseIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <line x1="18" y1="6" x2="6" y2="18" />
@@ -60,21 +70,25 @@ const CloseIcon = () => (
   </svg>
 );
 
-const KPI = ({ title, value, trend, trendType }) => (
-  <div className="card kpi">
-    <div className="kpiTop">
-      <div className="kpiTitle">{title}</div>
-      <div className={`kpiTrend ${trendType || ""}`}>
-        {trendType === "up" && <TrendUpIcon />}
-        {trendType === "down" && <TrendDownIcon />}
-        {trend}
+const KPI = ({ title, value, trend, trendType }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="card kpi">
+      <div className="kpiTop">
+        <div className="kpiTitle">{title}</div>
+        <div className={`kpiTrend ${trendType || ""}`}>
+          {trendType === "up" && <TrendUpIcon />}
+          {trendType === "down" && <TrendDownIcon />}
+          {(trendType === "warn" || trendType === "info") ? t(`dashboard.${trend}`, trend) : trend}
+        </div>
       </div>
+      <div className="kpiValue">{value}</div>
     </div>
-    <div className="kpiValue">{value}</div>
-  </div>
-);
+  );
+};
 
 const StatusPill = ({ status }) => {
+  const { t } = useTranslation();
   const getStatusClass = (s) => {
     switch (s) {
       case "DELIVERED":
@@ -94,14 +108,14 @@ const StatusPill = ({ status }) => {
 
   const getStatusLabel = (s) => {
     const labels = {
-      PENDING: "Chờ xử lý",
-      CONFIRMED: "Đã xác nhận",
-      PROCESSING: "Đang xử lý",
-      SHIPPING: "Đang giao",
-      DELIVERED: "Hoàn tất",
-      COMPLETED: "Hoàn tất",
-      CANCELLED: "Đã hủy",
-      RETURNED: "Hoàn trả",
+      PENDING: t("status.pending"),
+      CONFIRMED: t("status.confirmed"),
+      PROCESSING: t("status.processing"),
+      SHIPPING: t("status.shipping"),
+      DELIVERED: t("status.delivered"),
+      COMPLETED: t("status.completed"),
+      CANCELLED: t("status.cancelled"),
+      RETURNED: t("status.returned"),
     };
     return labels[s] || s;
   };
@@ -134,6 +148,7 @@ function Modal({ open, title, children, onClose }) {
 // AI Panel Component - Combined Summary, Chat and Alerts
 function AiPanel() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("assistant");
   const [summary, setSummary] = useState(null);
   const [anomalies, setAnomalies] = useState([]);
@@ -146,36 +161,28 @@ function AiPanel() {
   const renderMessageContent = (content) => {
     if (!content || typeof content !== 'string') return content;
 
-    // Regex to match product tags: PRODUCT[ID|Name|Price|ImageURL] (SKU: xxx, còn y)
-    // Also captures optional trailing SKU/stock info
     const productRegex = /PRODUCT\[(\d+)\|([^|]+)\|(\d+)\|([^\]]*)\](?:\s*\(SKU:\s*([^,]+),\s*còn\s*(\d+)\))?/g;
     const parts = [];
     let lastIndex = 0;
     let match;
 
     while ((match = productRegex.exec(content)) !== null) {
-      // Add text before the product card
       if (match.index > lastIndex) {
-        parts.push(
-          <span key={`text-${lastIndex}`}>
-            {content.substring(lastIndex, match.index)}
-          </span>
-        );
+        parts.push(<span key={`text-${lastIndex}`}>{content.substring(lastIndex, match.index)}</span>);
       }
 
-      // Extract product info
       const productId = match[1];
       const productName = match[2];
       const productPrice = match[3];
       const productImage = match[4] || null;
-      const sku = match[5] || null;  // Captured SKU
-      const stock = match[6] || null;  // Captured stock
+      const sku = match[5] || null;
+      const stock = match[6] || null;
 
-      // Add product card - Admin Premium Dark Theme
       parts.push(
         <div
           key={`product-${productId}-${match.index}`}
           onClick={() => navigate(`/admin/products`)}
+          className="admin-ai-product-card"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -186,99 +193,35 @@ function AiPanel() {
             borderRadius: '10px',
             cursor: 'pointer',
             border: '1px solid rgba(255,255,255,0.1)',
-            transition: 'all 0.2s ease',
             width: '100%',
-            boxSizing: 'border-box',
-            clear: 'both' // Force new line
-          }}
-          className="admin-ai-product-card"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-            e.currentTarget.style.transform = 'translateY(0)';
+            boxSizing: 'border-box'
           }}
         >
-          {/* Product Image */}
           {productImage && (
             <img
               src={productImage}
               alt={productName}
-              style={{
-                width: '44px',
-                height: '44px',
-                objectFit: 'cover',
-                borderRadius: '8px',
-                flexShrink: 0,
-                background: 'rgba(255,255,255,0.1)'
-              }}
+              style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px' }}
               onError={(e) => { e.target.style.display = 'none'; }}
             />
           )}
-
-          {/* Product Info */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontWeight: '700',
-              fontSize: '13px',
-              color: '#fff',
-              marginBottom: '2px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}>
+            <div style={{ fontWeight: '700', fontSize: '13px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {productName}
             </div>
-            <div style={{
-              fontSize: '11px',
-              color: '#4ade80',
-              fontWeight: '600',
-              marginBottom: stock ? '2px' : '0'
-            }}>
-              {new Intl.NumberFormat('vi-VN').format(productPrice)}₫
+            <div style={{ fontSize: '11px', color: '#4ade80', fontWeight: '600' }}>
+              {formatVND(productPrice)}
             </div>
-            {stock && (
-              <div style={{
-                fontSize: '10px',
-                color: parseInt(stock) <= 2 ? '#f87171' : parseInt(stock) <= 5 ? '#fbbf24' : '#94a3b8',
-                fontWeight: '500'
-              }}>
-                Còn {stock} sp
-              </div>
-            )}
           </div>
-
-          {/* Arrow Icon */}
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="rgba(255,255,255,0.5)"
-            strokeWidth="2"
-            style={{ flexShrink: 0 }}
-          >
-            <path d="M9 18l6-6-6-6" />
-          </svg>
+          <TrendUpIcon />
         </div>
       );
-
       lastIndex = match.index + match[0].length;
     }
 
-    // Add remaining text
     if (lastIndex < content.length) {
-      parts.push(
-        <span key={`text-${lastIndex}`}>
-          {content.substring(lastIndex)}
-        </span>
-      );
+      parts.push(<span key={`text-${lastIndex}`}>{content.substring(lastIndex)}</span>);
     }
-
     return parts.length > 0 ? parts : content;
   };
 
@@ -304,21 +247,19 @@ function AiPanel() {
 
   const handleSend = async () => {
     if (!inputValue.trim() || chatLoading) return;
-
     const userMessage = inputValue.trim();
     setInputValue("");
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setChatLoading(true);
-
     try {
       const response = await aiAPI.adminChat(userMessage);
       if (response.success) {
         setMessages((prev) => [...prev, { role: "assistant", content: response.reply }]);
       } else {
-        setMessages((prev) => [...prev, { role: "assistant", content: response.error || "Có lỗi xảy ra." }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: response.error || t("common.error_occurred") }]);
       }
     } catch (error) {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Không thể kết nối. Vui lòng thử lại." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: t("common.connection_error") }]);
     } finally {
       setChatLoading(false);
     }
@@ -332,9 +273,9 @@ function AiPanel() {
   };
 
   const SEVERITY_CONFIG = {
-    HIGH: { label: "Nghiêm trọng", class: "high" },
-    MEDIUM: { label: "Cần chú ý", class: "medium" },
-    LOW: { label: "Thông tin", class: "low" }
+    HIGH: { label: t("ai.severity_high"), class: "high" },
+    MEDIUM: { label: t("ai.severity_medium"), class: "medium" },
+    LOW: { label: t("ai.severity_low"), class: "low" }
   };
 
   if (loading) {
@@ -342,7 +283,7 @@ function AiPanel() {
       <div className="ai-panel-card">
         <div className="ai-panel-loading">
           <div className="spinner"></div>
-          <span>Đang phân tích dữ liệu...</span>
+          <span>{t("ai.typing")}</span>
         </div>
       </div>
     );
@@ -350,7 +291,6 @@ function AiPanel() {
 
   return (
     <div className="ai-panel-card">
-      {/* Tab Header */}
       <div className="ai-panel-tabs">
         <button
           className={`ai-panel-tab ${activeTab === "assistant" ? "active" : ""}`}
@@ -358,7 +298,7 @@ function AiPanel() {
           type="button"
         >
           <SparkleIcon />
-          <span>AI Assistant</span>
+          <span>{t("ai.panel_title")}</span>
         </button>
         <button
           className={`ai-panel-tab ${activeTab === "alerts" ? "active" : ""}`}
@@ -366,129 +306,122 @@ function AiPanel() {
           type="button"
         >
           <AlertIcon />
-          <span>Cảnh báo</span>
+          <span>{t("ai.alerts_tab")}</span>
           {anomalies.length > 0 && <span className="tab-badge">{anomalies.length}</span>}
         </button>
       </div>
 
-      {/* Assistant Tab */}
-      {activeTab === "assistant" && (
-        <div className="ai-panel-content">
-          {/* Summary Section */}
-          {summary && (
-            <div className="ai-summary-section">
-              <div className="ai-summary-header">
-                <span className="ai-label">PHÂN TÍCH HÔM NAY</span>
-                <span className="ai-badge live">LIVE</span>
+      <div className="ai-panel-content">
+        {activeTab === "assistant" ? (
+          <>
+            {summary && (
+              <div className="dash-ai-summary">
+                <div className="dash-ai-summary-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="ai-status-pulse"></div>
+                    <span className="ai-label">{t("ai.analysis_today")}</span>
+                  </div>
+                  <span className="ai-badge live">{t("ai.live_analytics", "LIVE ANALYTICS")}</span>
+                </div>
+                <p className="dash-ai-summary-text">{summary.summaryText}</p>
+
+                {summary.inventoryAlerts && summary.inventoryAlerts.length > 0 && (
+                  <div className="dash-ai-inventory-alerts">
+                    {summary.inventoryAlerts.slice(0, 2).map((alert, idx) => (
+                      <div key={idx} className="dash-ai-inventory-item">
+                        <AlertIcon />
+                        <span>{alert}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <p className="ai-summary-text">{summary.summaryText}</p>
+            )}
 
-              {/* Inventory Alerts in Summary */}
-              {summary.inventoryAlerts && summary.inventoryAlerts.length > 0 && (
-                <div className="ai-inventory-alerts">
-                  {summary.inventoryAlerts.slice(0, 2).map((alert, idx) => (
-                    <div key={idx} className="ai-inventory-item">
-                      <AlertIcon />
-                      <span>{alert}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className="ai-chat-section">
+              <div className="ai-messages">
+                {messages.length === 0 && (
+                  <div className="ai-placeholder-chat">
+                    <NovaIcon />
+                    <p>{t("ai.placeholder_chat")}</p>
+                  </div>
+                )}
+
+                {messages.map((msg, idx) => (
+                  <div key={idx} className={`ai-message ${msg.role}`}>
+                    {msg.role === "assistant" ? renderMessageContent(msg.content) : msg.content}
+                  </div>
+                ))}
+
+                {chatLoading && (
+                  <div className="ai-typing">
+                    <span></span><span></span><span></span>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-
-          {/* Chat Section */}
-          <div className="ai-chat-section">
-            <div className="ai-chat-header">
-              <span className="ai-label">HỎI AI VỀ DOANH NGHIỆP</span>
-            </div>
-
-            <div className="ai-messages">
-              {messages.length === 0 && (
-                <div className="ai-message assistant">
-                  Tôi có thể giúp gì về doanh thu, tồn kho, hoặc gợi ý kinh doanh?
-                </div>
-              )}
-
-              {messages.map((msg, idx) => (
-                <div key={idx} className={`ai-message ${msg.role}`}>
-                  {msg.role === "assistant"
-                    ? renderMessageContent(msg.content)
-                    : msg.content}
-                </div>
-              ))}
-
-              {chatLoading && (
-                <div className="ai-typing">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              )}
-            </div>
-
-            <div className="ai-input-container">
-              <input
-                type="text"
-                className="ai-input"
-                placeholder="Nhập câu hỏi..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={chatLoading}
-              />
-              <button
-                className="ai-send-btn"
-                onClick={handleSend}
-                disabled={!inputValue.trim() || chatLoading}
-                type="button"
-              >
-                <SendIcon />
+          </>
+        ) : (
+          <div className="ai-system-alerts">
+            <div className="ai-alerts-header">
+              <span className="ai-label">{t("ai.system_alerts")}</span>
+              <button className="refresh-btn" onClick={loadData} type="button">
+                <RefreshIcon />
               </button>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Alerts Tab */}
-      {activeTab === "alerts" && (
-        <div className="ai-panel-content">
-          <div className="ai-alerts-header">
-            <span className="ai-label">CẢNH BÁO HỆ THỐNG</span>
-            <button className="refresh-btn" onClick={loadData} type="button" title="Làm mới">
-              <RefreshIcon />
+            {anomalies.length === 0 ? (
+              <div className="ai-alerts-empty">
+                <div className="check-circle"><CheckIcon /></div>
+                <p>{t("ai.no_alerts")}</p>
+                <span>{t("ai.system_stable")}</span>
+              </div>
+            ) : (
+              <div className="ai-alerts-list">
+                {anomalies.map((anomaly, idx) => {
+                  const config = SEVERITY_CONFIG[anomaly.severity] || SEVERITY_CONFIG.LOW;
+                  return (
+                    <div key={idx} className={`ai-alert-item ${config.class}`}>
+                      <div className="ai-alert-header">
+                        <span className={`severity-badge ${config.class}`}>{config.label}</span>
+                      </div>
+                      <h4 className="ai-alert-title">{anomaly.title}</h4>
+                      <p className="ai-alert-desc">{anomaly.description}</p>
+                      {anomaly.suggestion && (
+                        <div className="ai-alert-suggestion">
+                          <strong>{t("ai.suggestion")}:</strong> {anomaly.suggestion}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {activeTab === "assistant" && (
+        <div className="ai-input-wrapper">
+          <div className="ai-input-container">
+            <input
+              type="text"
+              className="ai-input"
+              placeholder={t("ai.input_placeholder")}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyPress}
+              disabled={chatLoading}
+            />
+            <button
+              className="ai-send-btn"
+              onClick={handleSend}
+              disabled={!inputValue.trim() || chatLoading}
+              type="button"
+            >
+              <SendIcon />
             </button>
           </div>
-
-          {anomalies.length === 0 ? (
-            <div className="ai-alerts-empty">
-              <div className="check-circle">
-                <CheckIcon />
-              </div>
-              <p>Không phát hiện bất thường</p>
-              <span>Hệ thống hoạt động ổn định</span>
-            </div>
-          ) : (
-            <div className="ai-alerts-list">
-              {anomalies.slice(0, 5).map((anomaly, idx) => {
-                const config = SEVERITY_CONFIG[anomaly.severity] || SEVERITY_CONFIG.LOW;
-                return (
-                  <div key={idx} className={`ai-alert-item ${config.class}`}>
-                    <div className="ai-alert-header">
-                      <span className={`severity-badge ${config.class}`}>{config.label}</span>
-                    </div>
-                    <h4 className="ai-alert-title">{anomaly.title}</h4>
-                    <p className="ai-alert-desc">{anomaly.description}</p>
-                    {anomaly.suggestion && (
-                      <div className="ai-alert-suggestion">
-                        <span>Gợi ý:</span> {anomaly.suggestion}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
       )}
     </div>
@@ -497,25 +430,39 @@ function AiPanel() {
 
 export default function Dashboard() {
   const nav = useNavigate();
-  const [openCreate, setOpenCreate] = useState(false);
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
-  useEffect(() => {
-    async function loadDashboard() {
-      try {
-        const dashboardData = await api.dashboard.get();
-        setData(dashboardData);
-      } catch (error) {
-        console.error("Failed to load dashboard data:", error);
-      } finally {
-        setLoading(false);
-      }
+  const loadDashboard = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const dashboardData = await api.dashboard.get();
+      setData(dashboardData);
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error);
+    } finally {
+      if (!silent) setLoading(false);
     }
-    loadDashboard();
   }, []);
 
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center', fontWeight: '800' }}>ĐANG TẢI...</div>;
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  // WebSocket for real-time notifications
+  const onNotificationReceived = useCallback((notification) => {
+    if (notification.type === 'order') {
+      showToast(notification.message || t("dashboard.new_order_toast", "Có đơn hàng mới!"), "info");
+      // Refresh data silently to update KPIs and recent orders
+      loadDashboard(true);
+    }
+  }, [showToast, loadDashboard]);
+
+  useWebSocket('/topic/notifications', onNotificationReceived);
+
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center', fontWeight: '800' }}>{t("common.loading")}</div>;
 
   const kpis = data?.kpis || [];
   const recentOrders = data?.recentOrders || [];
@@ -525,18 +472,15 @@ export default function Dashboard() {
       {/* Compact Header */}
       <section className="compact-header">
         <div className="compact-header-left">
-          <h1 className="compact-title">FYD OPERATING SYSTEM</h1>
+          <h1 className="compact-title">{t("dashboard.title", "FYD OPERATING SYSTEM")}</h1>
           <div className="compact-badges">
-            <span className="compact-badge">REAL-TIME</span>
-            <span className="compact-badge">GEMINI AI</span>
+            <span className="compact-badge">{t("dashboard.realtime", "REAL-TIME")}</span>
+            <span className="compact-badge">{t("dashboard.gemini_ai", "GEMINI AI")}</span>
           </div>
         </div>
         <div className="compact-header-actions">
-          <button className="admin-btn admin-btn-primary" type="button" onClick={() => setOpenCreate(true)}>
-            + TẠO ĐƠN
-          </button>
           <button className="admin-btn admin-btn-outline" type="button" onClick={() => nav("/admin/ai")}>
-            XEM AI
+            {t("dashboard.view_ai", "XEM AI")}
           </button>
         </div>
       </section>
@@ -546,7 +490,7 @@ export default function Dashboard() {
         {kpis.map((k, i) => (
           <KPI
             key={i}
-            title={k.title}
+            title={t(`dashboard.kpi_${k.id}`, k.title)}
             value={k.value}
             trend={k.trendLabel}
             trendType={k.trendType}
@@ -560,11 +504,11 @@ export default function Dashboard() {
         <div className="card tableCard">
           <div className="cardHead">
             <div>
-              <div className="cardTitle">Đơn hàng gần đây</div>
-              <div className="cardSub">Dữ liệu thời gian thực</div>
+              <div className="cardTitle">{t("dashboard.recent_orders", "Đơn hàng gần đây")}</div>
+              <div className="cardSub">{t("dashboard.live_data", "Dữ liệu thời gian thực")}</div>
             </div>
             <button className="admin-btn admin-btn-outline" type="button" onClick={() => nav("/admin/orders")} style={{ padding: '6px 12px', fontSize: '11px' }}>
-              XEM TẤT CẢ
+              {t("dashboard.view_all")}
             </button>
           </div>
 
@@ -572,11 +516,11 @@ export default function Dashboard() {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>KHÁCH HÀNG</th>
-                  <th>MÃ ĐƠN</th>
-                  <th>TỔNG TIỀN</th>
-                  <th>TRẠNG THÁI</th>
-                  <th>THỜI GIAN</th>
+                  <th>{t("dashboard.customer")}</th>
+                  <th>{t("dashboard.order_code")}</th>
+                  <th>{t("dashboard.total_amount")}</th>
+                  <th>{t("dashboard.status")}</th>
+                  <th>{t("dashboard.time")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -586,7 +530,7 @@ export default function Dashboard() {
                       <div className="cellFlex">
                         <MiniAvatar name={o.customer?.fullName || o.shippingName} />
                         <div className="nameStack">
-                          <div className="nameMain">{o.customer?.fullName || o.shippingName || 'Khách'}</div>
+                          <div className="nameMain">{o.customer?.fullName || o.shippingName || t("dashboard.guest")}</div>
                           <div className="nameSub">{o.customer?.phone || o.shippingPhone}</div>
                         </div>
                       </div>
@@ -595,13 +539,13 @@ export default function Dashboard() {
                     <td style={{ fontWeight: '800' }}>{formatVND(o.totalAmount)}</td>
                     <td><StatusPill status={o.status} /></td>
                     <td style={{ color: '#666', fontSize: '12px' }}>
-                      {o.createdAt ? new Date(o.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                      {o.createdAt ? new Date(o.createdAt).toLocaleTimeString(t("common.locale_tag"), { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {recentOrders.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>Không có đơn hàng nào.</div>}
+            {recentOrders.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>{t("common.no_data")}</div>}
           </div>
         </div>
 
@@ -611,42 +555,6 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <Modal open={openCreate} title="TẠO ĐƠN HÀNG MỚI" onClose={() => setOpenCreate(false)}>
-        <div className="formGrid">
-          <label className="field">
-            <span>Khách hàng</span>
-            <input placeholder="Tên khách hàng" />
-          </label>
-          <label className="field">
-            <span>Số điện thoại</span>
-            <input placeholder="09xx xxx xxx" />
-          </label>
-          <label className="field">
-            <span>Sản phẩm</span>
-            <input placeholder="Tìm sản phẩm..." />
-          </label>
-          <label className="field">
-            <span>Số lượng</span>
-            <input type="number" defaultValue="1" />
-          </label>
-        </div>
-
-        <div className="modalActions">
-          <button className="admin-btn admin-btn-outline" type="button" onClick={() => setOpenCreate(false)}>
-            HỦY BỎ
-          </button>
-          <button
-            className="admin-btn admin-btn-primary"
-            type="button"
-            onClick={() => {
-              setOpenCreate(false);
-              nav("/admin/orders");
-            }}
-          >
-            LƯU ĐƠN HÀNG
-          </button>
-        </div>
-      </Modal>
     </div>
   );
 }

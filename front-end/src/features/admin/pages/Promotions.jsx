@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { promotionAPI, formatVND } from "@shared/utils/api.js";
+import { useToast } from "@shared/context/ToastContext";
 import "../styles/dashboard.css";
 import "../styles/pages.css";
 import "../styles/promotions.css";
+import "../styles/admin-forms.css";
+import { useTranslation } from "react-i18next";
 
 // SVG Icons
 const CloseIcon = () => (
@@ -97,9 +100,11 @@ const emptyForm = {
     startDate: "",
     endDate: "",
     isActive: true,
+    isFlashSale: false,
 };
 
 export default function Promotions() {
+    const { t } = useTranslation();
     const [promotions, setPromotions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -107,6 +112,7 @@ export default function Promotions() {
     const [form, setForm] = useState(emptyForm);
     const [saving, setSaving] = useState(false);
     const [q, setQ] = useState("");
+    const { showToast } = useToast();
 
     useEffect(() => {
         loadPromotions();
@@ -144,13 +150,14 @@ export default function Promotions() {
             startDate: promo.startDate ? promo.startDate.slice(0, 16) : "",
             endDate: promo.endDate ? promo.endDate.slice(0, 16) : "",
             isActive: promo.isActive !== false,
+            isFlashSale: promo.isFlashSale === true,
         });
         setModalOpen(true);
     };
 
     const handleSave = async () => {
         if (!form.code.trim() || !form.name.trim() || !form.discountValue) {
-            alert("Vui lòng nhập mã, tên và giá trị giảm giá");
+            showToast(t("profile.validate_required"), "error");
             return;
         }
 
@@ -168,6 +175,7 @@ export default function Promotions() {
                 startDate: form.startDate || null,
                 endDate: form.endDate || null,
                 isActive: form.isActive,
+                isFlashSale: form.isFlashSale,
             };
 
             if (editingId) {
@@ -178,20 +186,22 @@ export default function Promotions() {
 
             setModalOpen(false);
             loadPromotions();
+            showToast(editingId ? t("promotions.msg_update_success") : t("promotions.msg_create_success"));
         } catch (err) {
-            alert("Lỗi: " + err.message);
+            showToast("Lỗi: " + err.message, "error");
         } finally {
             setSaving(false);
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Bạn có chắc muốn xóa khuyến mãi này?")) return;
+    const handleDelete = async (promo) => {
+        if (!window.confirm(t("promotions.delete_confirm", { code: promo.code }))) return;
         try {
-            await promotionAPI.delete(id);
+            await promotionAPI.delete(promo.id);
             loadPromotions();
+            showToast(t("promotions.msg_delete_success"));
         } catch (err) {
-            alert("Lỗi: " + err.message);
+            showToast("Lỗi: " + err.message, "error");
         }
     };
 
@@ -199,8 +209,9 @@ export default function Promotions() {
         try {
             await promotionAPI.update(promo.id, { ...promo, isActive: !promo.isActive });
             loadPromotions();
+            showToast(promo.isActive ? t("common.deactivated") : t("common.activated"));
         } catch (err) {
-            alert("Lỗi: " + err.message);
+            showToast("Lỗi: " + err.message, "error");
         }
     };
 
@@ -210,12 +221,12 @@ export default function Promotions() {
     });
 
     const getStatusBadge = (promo) => {
-        if (!promo.isActive) return { cls: "paused", label: "Tạm dừng" };
+        if (!promo.isActive) return { cls: "paused", label: t("common.paused") };
         const now = new Date();
-        if (promo.startDate && new Date(promo.startDate) > now) return { cls: "pending", label: "Sắp bắt đầu" };
-        if (promo.endDate && new Date(promo.endDate) < now) return { cls: "expired", label: "Hết hạn" };
-        if (promo.usageLimit && promo.usedCount >= promo.usageLimit) return { cls: "expired", label: "Hết lượt" };
-        return { cls: "active", label: "Đang hoạt động" };
+        if (promo.startDate && new Date(promo.startDate) > now) return { cls: "pending", label: t("promotions.status_scheduled") };
+        if (promo.endDate && new Date(promo.endDate) < now) return { cls: "expired", label: t("promotions.status_expired") };
+        if (promo.usageLimit && promo.usedCount >= promo.usageLimit) return { cls: "expired", label: t("promotions.status_expired") };
+        return { cls: "active", label: t("promotions.status_active") };
     };
 
     if (loading) {
@@ -225,14 +236,14 @@ export default function Promotions() {
                     <div className="promo-header-left">
                         <div className="promo-icon"><TagIcon /></div>
                         <div>
-                            <h1 className="promo-title">Khuyến mãi</h1>
-                            <p className="promo-subtitle">Đang tải...</p>
+                            <h1 className="promo-title">{t("promotions.title")}</h1>
+                            <p className="promo-subtitle">{t("common.loading")}...</p>
                         </div>
                     </div>
                 </div>
                 <div className="promo-loading">
                     <div className="promo-spinner"></div>
-                    <span>Đang tải dữ liệu...</span>
+                    <span>{t("common.loading_data")}...</span>
                 </div>
             </div>
         );
@@ -245,8 +256,8 @@ export default function Promotions() {
                 <div className="promo-header-left">
                     <div className="promo-icon"><TagIcon /></div>
                     <div>
-                        <h1 className="promo-title">Khuyến mãi</h1>
-                        <p className="promo-subtitle">{promotions.length} mã khuyến mãi</p>
+                        <h1 className="promo-title">{t("promotions.title")}</h1>
+                        <p className="promo-subtitle">{promotions.length} {t("promotions.title").toLowerCase()}</p>
                     </div>
                 </div>
 
@@ -255,14 +266,14 @@ export default function Promotions() {
                         <SearchIcon />
                         <input
                             type="text"
-                            placeholder="Tìm theo mã hoặc tên..."
+                            placeholder={t("common.search_placeholder")}
                             value={q}
                             onChange={(e) => setQ(e.target.value)}
                         />
                     </div>
                     <button className="promo-btn-primary" type="button" onClick={openAdd}>
                         <PlusIcon />
-                        <span>Tạo mã mới</span>
+                        <span>{t("promotions.btn_add")}</span>
                     </button>
                 </div>
             </div>
@@ -272,13 +283,13 @@ export default function Promotions() {
 
             {/* Table Header */}
             <div className="promo-table-header">
-                <div className="promo-col promo-col-code">Mã</div>
-                <div className="promo-col promo-col-name">Tên chương trình</div>
-                <div className="promo-col promo-col-discount">Giảm giá</div>
-                <div className="promo-col promo-col-min">Đơn tối thiểu</div>
-                <div className="promo-col promo-col-usage">Lượt dùng</div>
-                <div className="promo-col promo-col-status">Trạng thái</div>
-                <div className="promo-col promo-col-actions">Hành động</div>
+                <div className="promo-col promo-col-code">{t("promotions.col_code")}</div>
+                <div className="promo-col promo-col-name">{t("common.name")}</div>
+                <div className="promo-col promo-col-discount">{t("promotions.col_value")}</div>
+                <div className="promo-col promo-col-min">{t("promotions.col_min_order")}</div>
+                <div className="promo-col promo-col-usage">{t("promotions.col_usage")}</div>
+                <div className="promo-col promo-col-status">{t("common.status")}</div>
+                <div className="promo-col promo-col-actions">{t("common.actions")}</div>
             </div>
 
             {/* Promotion List */}
@@ -304,7 +315,7 @@ export default function Promotions() {
                                 </span>
                                 {promo.maxDiscount && promo.discountType === "PERCENT" && (
                                     <span className="promo-max-discount">
-                                        tối đa {formatVND(promo.maxDiscount)}
+                                        {t("promotions.label_max_discount")} {formatVND(promo.maxDiscount)}
                                     </span>
                                 )}
                             </div>
@@ -330,28 +341,28 @@ export default function Promotions() {
                                         className="promo-action-btn"
                                         type="button"
                                         onClick={() => openEdit(promo)}
-                                        title="Sửa"
+                                        title={t("common.edit")}
                                     >
                                         <EditIcon />
-                                        <span>Sửa</span>
+                                        <span>{t("common.edit")}</span>
                                     </button>
                                     <button
                                         className="promo-action-btn"
                                         type="button"
                                         onClick={() => toggleActive(promo)}
-                                        title={promo.isActive ? "Tạm dừng" : "Kích hoạt"}
+                                        title={promo.isActive ? t("common.pause") : t("common.activate")}
                                     >
                                         {promo.isActive ? <PauseIcon /> : <PlayIcon />}
-                                        <span>{promo.isActive ? "Tắt" : "Bật"}</span>
+                                        <span>{promo.isActive ? t("common.deactivate_short") : t("common.activate_short")}</span>
                                     </button>
                                     <button
                                         className="promo-action-btn danger"
                                         type="button"
-                                        onClick={() => handleDelete(promo.id)}
-                                        title="Xóa"
+                                        onClick={() => handleDelete(promo)}
+                                        title={t("common.delete")}
                                     >
                                         <TrashIcon />
-                                        <span>Xóa</span>
+                                        <span>{t("common.delete")}</span>
                                     </button>
                                 </div>
                             </div>
@@ -363,11 +374,11 @@ export default function Promotions() {
                 {filtered.length === 0 && (
                     <div className="promo-empty">
                         <div className="promo-empty-icon"><EmptyIcon /></div>
-                        <h3>Chưa có mã khuyến mãi nào</h3>
-                        <p>Bắt đầu tạo mã khuyến mãi đầu tiên để thu hút khách hàng</p>
+                        <h3>{t("common.empty_state")}</h3>
+                        <p>{t("promotions.subtitle")}</p>
                         <button className="promo-btn-primary" type="button" onClick={openAdd}>
                             <PlusIcon />
-                            <span>Tạo mã mới</span>
+                            <span>{t("promotions.btn_add")}</span>
                         </button>
                     </div>
                 )}
@@ -376,116 +387,163 @@ export default function Promotions() {
             {/* Modal */}
             <Modal
                 open={modalOpen}
-                title={editingId ? "Sửa khuyến mãi" : "Tạo khuyến mãi mới"}
+                title={editingId ? t("promotions.modal_edit") : t("promotions.modal_add")}
                 onClose={() => setModalOpen(false)}
             >
-                <div className="formGrid">
-                    <label className="field">
-                        <span>Mã khuyến mãi *</span>
-                        <input
-                            value={form.code}
-                            onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
-                            placeholder="VD: SUMMER2024"
-                            disabled={!!editingId}
-                        />
-                    </label>
-                    <label className="field">
-                        <span>Tên khuyến mãi *</span>
-                        <input
-                            value={form.name}
-                            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                            placeholder="VD: Giảm giá mùa hè"
-                        />
-                    </label>
-                    <label className="field full">
-                        <span>Mô tả</span>
-                        <input
-                            value={form.description}
-                            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                            placeholder="VD: Áp dụng cho đơn hàng từ 500k"
-                        />
-                    </label>
-                    <label className="field">
-                        <span>Loại giảm giá *</span>
-                        <select
-                            value={form.discountType}
-                            onChange={(e) => setForm((f) => ({ ...f, discountType: e.target.value }))}
-                        >
-                            <option value="PERCENT">Phần trăm (%)</option>
-                            <option value="FIXED">Số tiền cố định (VND)</option>
-                        </select>
-                    </label>
-                    <label className="field">
-                        <span>Giá trị giảm *</span>
-                        <input
-                            type="number"
-                            value={form.discountValue}
-                            onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))}
-                            placeholder={form.discountType === "PERCENT" ? "VD: 10" : "VD: 50000"}
-                        />
-                    </label>
-                    <label className="field">
-                        <span>Đơn tối thiểu (VND)</span>
-                        <input
-                            type="number"
-                            value={form.minOrderAmount}
-                            onChange={(e) => setForm((f) => ({ ...f, minOrderAmount: e.target.value }))}
-                            placeholder="VD: 500000"
-                        />
-                    </label>
-                    {form.discountType === "PERCENT" && (
-                        <label className="field">
-                            <span>Giảm tối đa (VND)</span>
+                <div className="premium-form">
+                    {/* General Info */}
+                    <div className="form-group">
+                        <div className="form-group-title">{t("products.section_basic")}</div>
+                        <div className="form-row">
+                            <label className="admin-field">
+                                <span>{t("promotions.label_code")} *</span>
+                                <input
+                                    value={form.code}
+                                    onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
+                                    placeholder="VD: SUMMER24"
+                                    disabled={!!editingId}
+                                />
+                            </label>
+                            <label className="admin-field">
+                                <span>{t("common.name")} *</span>
+                                <input
+                                    value={form.name}
+                                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                                    placeholder="VD: Khai xuân Quý Tỵ"
+                                />
+                            </label>
+                        </div>
+                        <div className="form-row" style={{ marginTop: 16 }}>
+                            <label className="admin-field full">
+                                <span>{t("promotions.label_desc")}</span>
+                                <textarea
+                                    value={form.description}
+                                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                                    placeholder="VD: Áp dụng cho toàn bộ sản phẩm..."
+                                    rows={2}
+                                />
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Discount & Rules */}
+                    <div className="form-group">
+                        <div className="form-group-title">{t("products.section_pricing")}</div>
+                        <div className="form-row three-col">
+                            <label className="admin-field">
+                                <span>{t("promotions.label_type")} *</span>
+                                <select
+                                    value={form.discountType}
+                                    onChange={(e) => setForm((f) => ({ ...f, discountType: e.target.value }))}
+                                >
+                                    <option value="PERCENT">{t("promotions.type_percentage")}</option>
+                                    <option value="FIXED">{t("promotions.type_fixed")}</option>
+                                </select>
+                            </label>
+                            <label className="admin-field">
+                                <span>{t("promotions.label_value")} *</span>
+                                <input
+                                    type="number"
+                                    value={form.discountValue}
+                                    onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))}
+                                    placeholder="0"
+                                />
+                            </label>
+                            <label className="admin-field">
+                                <span>{t("promotions.label_min_order")}</span>
+                                <input
+                                    type="number"
+                                    value={form.minOrderAmount}
+                                    onChange={(e) => setForm((f) => ({ ...f, minOrderAmount: e.target.value }))}
+                                    placeholder="0"
+                                />
+                            </label>
+                        </div>
+                        <div className="form-row three-col" style={{ marginTop: 16 }}>
+                            <label className="admin-field">
+                                <span>{t("promotions.label_limit")}</span>
+                                <input
+                                    type="number"
+                                    value={form.usageLimit}
+                                    onChange={(e) => setForm((f) => ({ ...f, usageLimit: e.target.value }))}
+                                    placeholder="∞"
+                                />
+                            </label>
+                            {form.discountType === "PERCENT" && (
+                                <label className="admin-field">
+                                    <span>{t("promotions.label_max_discount")}</span>
+                                    <input
+                                        type="number"
+                                        value={form.maxDiscount}
+                                        onChange={(e) => setForm((f) => ({ ...f, maxDiscount: e.target.value }))}
+                                        placeholder="0"
+                                    />
+                                </label>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Schedule */}
+                    <div className="form-group">
+                        <div className="form-group-title">{t("promotions.col_start")} & {t("promotions.col_end")}</div>
+                        <div className="form-row">
+                            <label className="admin-field">
+                                <span>{t("promotions.col_start")}</span>
+                                <input
+                                    type="datetime-local"
+                                    value={form.startDate}
+                                    onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+                                />
+                            </label>
+                            <label className="admin-field">
+                                <span>{t("promotions.col_end")}</span>
+                                <input
+                                    type="datetime-local"
+                                    value={form.endDate}
+                                    onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
+                                />
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Settings Toggles */}
+                    <div className="toggle-group">
+                        <label className="admin-toggle">
                             <input
-                                type="number"
-                                value={form.maxDiscount}
-                                onChange={(e) => setForm((f) => ({ ...f, maxDiscount: e.target.value }))}
-                                placeholder="VD: 100000"
+                                type="checkbox"
+                                hidden
+                                checked={form.isActive}
+                                onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
                             />
+                            <div className="toggle-slider"></div>
+                            <div className="toggle-label">
+                                <span className="toggle-title">{t("common.activated")}</span>
+                                <span className="toggle-desc">{t("common.status")}</span>
+                            </div>
                         </label>
-                    )}
-                    <label className="field">
-                        <span>Giới hạn sử dụng</span>
-                        <input
-                            type="number"
-                            value={form.usageLimit}
-                            onChange={(e) => setForm((f) => ({ ...f, usageLimit: e.target.value }))}
-                            placeholder="Để trống = không giới hạn"
-                        />
-                    </label>
-                    <label className="field">
-                        <span>Bắt đầu</span>
-                        <input
-                            type="datetime-local"
-                            value={form.startDate}
-                            onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
-                        />
-                    </label>
-                    <label className="field">
-                        <span>Kết thúc</span>
-                        <input
-                            type="datetime-local"
-                            value={form.endDate}
-                            onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
-                        />
-                    </label>
-                    <label className="field" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <input
-                            type="checkbox"
-                            checked={form.isActive}
-                            onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-                            style={{ width: 18, height: 18 }}
-                        />
-                        <span>Kích hoạt</span>
-                    </label>
+
+                        <label className={`admin-toggle ${form.isFlashSale ? 'flash-sale-highlight' : ''}`}>
+                            <input
+                                type="checkbox"
+                                hidden
+                                checked={form.isFlashSale}
+                                onChange={(e) => setForm((f) => ({ ...f, isFlashSale: e.target.checked }))}
+                            />
+                            <div className="toggle-slider"></div>
+                            <div className="toggle-label">
+                                <span className="toggle-title">{t("promotions.label_is_flash_sale")}</span>
+                                <span className="toggle-desc">⚡ Hiển thị đếm ngược Shop</span>
+                            </div>
+                        </label>
+                    </div>
                 </div>
 
                 <div className="modalActions">
                     <button className="btnGhost" type="button" onClick={() => setModalOpen(false)}>
-                        Hủy
+                        {t("common.cancel")}
                     </button>
                     <button className="btnPrimary" type="button" onClick={handleSave} disabled={saving}>
-                        {saving ? "Đang lưu..." : "Lưu"}
+                        {saving ? t("common.saving") + "..." : t("common.save")}
                     </button>
                 </div>
             </Modal>

@@ -1,5 +1,6 @@
 package com.fyd.backend.controller;
 
+import com.fyd.backend.annotation.Loggable;
 import com.fyd.backend.dto.ProductDTO;
 import com.fyd.backend.entity.Product;
 import com.fyd.backend.entity.ProductImage;
@@ -15,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -54,6 +57,12 @@ public class ProductController {
     @Autowired
     private ColorRepository colorRepository;
     
+    @Autowired
+    private com.fyd.backend.service.ActivityLogService activityLogService;
+    
+    @Autowired
+    private com.fyd.backend.repository.UserRepository userRepository;
+    
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
 
@@ -61,6 +70,12 @@ public class ProductController {
     @Transactional(readOnly = true)
     public ResponseEntity<Map<String, Object>> getProducts(
             @RequestParam(defaultValue = "") String q,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long brandId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Long colorId,
+            @RequestParam(required = false) Long sizeId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "id") String sortBy,
@@ -72,10 +87,19 @@ public class ProductController {
         PageRequest pageRequest = PageRequest.of(page, size, sort);
         
         Page<Product> productPage;
-        if (q.isEmpty()) {
-            productPage = productRepository.findAll(pageRequest);
+        
+        // Check if any advanced filters are applied
+        boolean hasAdvancedFilters = categoryId != null || brandId != null || 
+            minPrice != null || maxPrice != null || colorId != null || sizeId != null;
+        
+        if (hasAdvancedFilters || !q.isEmpty()) {
+            productPage = productRepository.advancedSearch(
+                q.isEmpty() ? null : q,
+                categoryId, brandId, minPrice, maxPrice, colorId, sizeId,
+                pageRequest
+            );
         } else {
-            productPage = productRepository.search(q, pageRequest);
+            productPage = productRepository.findAll(pageRequest);
         }
         
         // Force load lazy collections within transaction
@@ -125,6 +149,7 @@ public class ProductController {
 
     @PostMapping
     @Transactional
+    @Loggable(action = "CREATE", entityType = "Product")
     public ResponseEntity<ProductDTO> createProduct(@RequestBody ProductDTO dto) {
         Product product = new Product();
         updateProductFromDTO(product, dto);
@@ -161,6 +186,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
+    @Loggable(action = "UPDATE", entityType = "Product")
     public ResponseEntity<ProductDTO> updateProduct(@PathVariable Long id, @RequestBody ProductDTO dto) {
         return productRepository.findById(id)
             .map(product -> {
@@ -173,12 +199,73 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-        if (productRepository.existsById(id)) {
-            productRepository.deleteById(id);
-            return ResponseEntity.ok().build();
+    @Loggable(action = "DELETE", entityType = "Product")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
+        // Get product info BEFORE checking existence to avoid transaction issues
+        Product product = productRepository.findById(id).orElse(null);
+        
+        if (product == null) {
+            System.out.println("=== Product not found: ID=" + id);
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
+        
+        // Store info before deleting
+        String productName = product.getName();
+        String productSku = product.getSku();
+        Long productId = product.getId();
+        
+        System.out.println("=== Deleting product: ID=" + productId + ", SKU=" + productSku + ", Name=" + productName);
+        
+        // Delete the product
+        try {
+            productRepository.deleteById(id);
+            System.out.println("=== Product deleted successfully");
+            
+            // Log activity AFTER successful deletion
+            try {
+                // Get current user from security context
+                org.springframework.security.core.Authentication auth = 
+                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                
+                com.fyd.backend.entity.User user = null;
+                if (auth != null && auth.getPrincipal() != null) {
+                    String userId = auth.getPrincipal().toString();
+                    user = userRepository.findById(Long.parseLong(userId)).orElse(null);
+                }
+                
+                String ipAddress = request.getRemoteAddr();
+                String userAgent = request.getHeader("User-Agent");
+                String entityName = productName + " (SKU: " + productSku + ")";
+                
+                // Create a simple map for old data instead of passing the entity
+                Map<String, Object> oldData = new HashMap<>();
+                oldData.put("id", productId);
+                oldData.put("name", productName);
+                oldData.put("sku", productSku);
+                
+                activityLogService.logActivity(
+                    user,
+                    "DELETE",
+                    "Product",
+                    productId,
+                    entityName,
+                    oldData,
+                    null,
+                    ipAddress,
+                    userAgent
+                );
+                System.out.println("=== Activity log created successfully");
+            } catch (Exception e) {
+                System.err.println("=== Failed to create activity log: " + e.getMessage());
+                e.printStackTrace();
+            }
+            
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            System.err.println("=== Failed to delete product: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PatchMapping("/{id}/stock")
@@ -236,16 +323,24 @@ public class ProductController {
                         Files.createDirectories(uploadPath);
                     }
                     
-                    // Generate unique filename
-                    String originalFilename = file.getOriginalFilename();
-                    String extension = originalFilename != null && originalFilename.contains(".") 
-                        ? originalFilename.substring(originalFilename.lastIndexOf(".")) 
-                        : ".jpg";
-                    String newFilename = "product_" + id + "_" + UUID.randomUUID().toString().substring(0, 8) + extension;
-                    
-                    // Save file
+                    // Generate unique filename with .webp extension
+                    String newFilename = "product_" + id + "_" + UUID.randomUUID().toString().substring(0, 8) + ".webp";
                     Path filePath = uploadPath.resolve(newFilename);
-                    Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                    // Convert and compress to WebP
+                    try (var inputStream = file.getInputStream()) {
+                        BufferedImage image = ImageIO.read(inputStream);
+                        if (image == null) {
+                            return ResponseEntity.badRequest().<Map<String, Object>>body(Map.of("error", "Invalid or unsupported image format"));
+                        }
+                        
+                        // Save as WebP
+                        boolean written = ImageIO.write(image, "webp", filePath.toFile());
+                        if (!written) {
+                            // Fallback if webp writer is not found (though dependency should provide it)
+                            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    }
                     
                     // Create ProductImage entity
                     ProductImage productImage = new ProductImage();
@@ -286,9 +381,9 @@ public class ProductController {
             .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/featured")
+    @GetMapping("/list/featured")
     @Transactional(readOnly = true)
-    public ResponseEntity<List<ProductDTO>> getFeatured() {
+    public ResponseEntity<List<ProductDTO>> getFeaturedProducts() {
         List<ProductDTO> products = productRepository.findFeatured().stream()
             .map(p -> {
                 p.getVariants().size();
@@ -299,9 +394,9 @@ public class ProductController {
         return ResponseEntity.ok(products);
     }
 
-    @GetMapping("/new")
+    @GetMapping("/list/new")
     @Transactional(readOnly = true)
-    public ResponseEntity<List<ProductDTO>> getNewArrivals() {
+    public ResponseEntity<List<ProductDTO>> getNewProducts() {
         List<ProductDTO> products = productRepository.findNewArrivals().stream()
             .map(p -> {
                 p.getVariants().size();
@@ -312,10 +407,23 @@ public class ProductController {
         return ResponseEntity.ok(products);
     }
 
-    @GetMapping("/top-selling")
+    @GetMapping("/list/top-selling")
     @Transactional(readOnly = true)
     public ResponseEntity<List<ProductDTO>> getTopSelling(@RequestParam(defaultValue = "10") int limit) {
         List<ProductDTO> products = productRepository.findTopSelling(PageRequest.of(0, limit)).stream()
+            .map(p -> {
+                p.getVariants().size();
+                p.getImages().size();
+                return ProductDTO.fromEntity(p);
+            })
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(products);
+    }
+
+    @GetMapping("/list/flash-sale")
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<ProductDTO>> getFlashSaleProducts() {
+        List<ProductDTO> products = productRepository.findFlashSaleProducts().stream()
             .map(p -> {
                 p.getVariants().size();
                 p.getImages().size();
@@ -337,6 +445,7 @@ public class ProductController {
         product.setStatus(dto.getStatus() != null ? dto.getStatus() : "ACTIVE");
         product.setIsFeatured(dto.getIsFeatured() != null ? dto.getIsFeatured() : false);
         product.setIsNew(dto.getIsNew() != null ? dto.getIsNew() : false);
+        product.setIsFlashSale(dto.getIsFlashSale() != null ? dto.getIsFlashSale() : false);
         
         if (dto.getCategoryId() != null) {
             categoryRepository.findById(dto.getCategoryId())

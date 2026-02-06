@@ -532,3 +532,497 @@
         transition: none !important;
     }
 }
+
+/* =====================================================
+   ALL NOTIFICATIONS MODAL
+   ===================================================== */
+.notif-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5vh 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+.notif-modal {
+    width: 100%;
+    max-width: 1100px;
+    height: 90vh;
+    max-height: 850px;
+    background: var(--admin-bg-secondary, #0a0a0f);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--admin-radius-xl);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    animation: modalScaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalScaleUp {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Modal Header */
+.notif-modal-header {
+    padding: 24px 30px;
+    border-bottom: 1px solid var(--admin-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-title-group h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--admin-text);
+}
+
+.modal-subtitle {
+    font-size: 13px;
+    color: var(--admin-text-muted);
+}
+
+.modal-header-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.modal-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--admin-radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--admin-border);
+    background: transparent;
+    color: var(--admin-text);
+}
+
+.modal-action-btn.primary {
+    background: rgba(var(--admin-accent-rgb), 0.1);
+    color: var(--admin-accent);
+    border-color: rgba(var(--admin-accent-rgb), 0.3);
+}
+
+.modal-action-btn:hover:not(:disabled) {
+    background: var(--admin-accent);
+    color: #000;
+    border-color: var(--admin-accent);
+}
+
+.modal-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.modal-close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--admin-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+    background: var(--admin-error);
+    color: white;
+}
+
+/* Modal Toolbar */
+.notif-modal-toolbar {
+    padding: 15px 30px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--admin-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.modal-filters {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+
+.modal-filter-tab {
+    padding: 6px 16px;
+    border-radius: var(--admin-radius-full);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--admin-text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.modal-filter-tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.modal-filter-tab.active {
+    background: var(--admin-accent);
+    color: #000;
+    font-weight: 700;
+}
+
+.tab-count {
+    font-size: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+.modal-search {
+    position: relative;
+    max-width: 300px;
+    width: 100%;
+}
+
+.modal-search svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--admin-text-muted);
+}
+
+.modal-search input {
+    width: 100%;
+    padding: 10px 15px 10px 40px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius-lg);
+    color: var(--admin-text);
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.modal-search input:focus {
+    outline: none;
+    border-color: var(--admin-accent);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(var(--admin-accent-rgb), 0.1);
+}
+
+/* Modal Content */
+.notif-modal-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px;
+}
+
+.modal-notif-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+.modal-notif-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius-lg);
+    padding: 20px;
+    display: flex;
+    gap: 15px;
+    position: relative;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.modal-notif-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(var(--admin-accent-rgb), 0.3);
+}
+
+.modal-notif-card.unread {
+    background: rgba(var(--admin-accent-rgb), 0.05);
+    border-color: rgba(var(--admin-accent-rgb), 0.2);
+}
+
+.card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--admin-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* reused from panel */
+.card-icon.order {
+    background: var(--admin-info-bg);
+    color: var(--admin-info);
+}
+
+.card-icon.inventory {
+    background: var(--admin-warning-bg);
+    color: var(--admin-warning);
+}
+
+.card-icon.customer {
+    background: var(--admin-success-bg);
+    color: var(--admin-success);
+}
+
+.card-icon.system {
+    background: rgba(148, 163, 184, 0.1);
+    color: var(--admin-text-muted);
+}
+
+.card-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.card-title {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--admin-text);
+}
+
+.card-time {
+    font-size: 11px;
+    color: var(--admin-text-muted);
+    white-space: nowrap;
+}
+
+.card-desc {
+    font-size: 14px;
+    color: var(--admin-text-muted);
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.priority-tag {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.priority-tag.low {
+    background: rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
+}
+
+.priority-tag.medium {
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+}
+
+.priority-tag.high {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+}
+
+.priority-tag.urgent {
+    background: rgba(248, 113, 113, 0.2);
+    color: #f87171;
+}
+
+.card-actions {
+    display: flex;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.modal-notif-card:hover .card-actions {
+    opacity: 1;
+}
+
+.row-action-btn {
+    background: transparent;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--admin-accent);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.row-action-btn:hover {
+    background: rgba(var(--admin-accent-rgb), 0.1);
+}
+
+.row-action-btn.delete {
+    color: var(--admin-error);
+}
+
+.row-action-btn.delete:hover {
+    background: rgba(248, 113, 113, 0.1);
+}
+
+.card-unread-indicator {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--admin-accent);
+    box-shadow: 0 0 10px var(--admin-accent);
+}
+
+.modal-notif-card.unread:hover .card-unread-indicator {
+    display: none;
+}
+
+/* Modal Footer */
+.notif-modal-footer {
+    padding: 15px 30px;
+    background: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid var(--admin-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.footer-stats {
+    font-size: 13px;
+    color: var(--admin-text-muted);
+}
+
+.footer-close-btn {
+    background: var(--admin-accent);
+    color: #000;
+    border: none;
+    padding: 8px 24px;
+    border-radius: var(--admin-radius-md);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.footer-close-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(var(--admin-accent-rgb), 0.3);
+}
+
+/* States */
+.modal-loading-state,
+.modal-empty-state {
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--admin-text-muted);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(var(--admin-accent-rgb), 0.1);
+    border-top-color: var(--admin-accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.modal-empty-state svg {
+    margin-bottom: 20px;
+    opacity: 0.2;
+}
+
+.clear-search-btn {
+    margin-top: 15px;
+    background: transparent;
+    border: 1px solid var(--admin-border);
+    color: var(--admin-text);
+    padding: 6px 16px;
+    border-radius: var(--admin-radius-md);
+    cursor: pointer;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+    .modal-notif-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .notif-modal-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .modal-search {
+        max-width: none;
+    }
+}

@@ -2,7 +2,14 @@
 
 import { getSession } from './authSession';
 
-const API_BASE = 'http://localhost:8080/api';
+export const BASE_URL = 'http://localhost:8080';
+const API_BASE = `${BASE_URL}/api`;
+
+export const getAssetUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${BASE_URL}${url}`;
+};
 
 // Helper function for API calls
 async function fetchAPI(endpoint, options = {}) {
@@ -30,8 +37,11 @@ async function fetchAPI(endpoint, options = {}) {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Network error' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+      const error = new Error(errorData.message || `HTTP ${response.status}`);
+      error.data = errorData; // Attach full response data
+      error.status = response.status;
+      throw error;
     }
 
     // Handle empty responses (204 No Content or empty body)
@@ -61,6 +71,9 @@ export const authAPI = {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
+
+  getSessions: () => fetchAPI('/auth/sessions'),
+  getActivities: () => fetchAPI('/auth/activities'),
 };
 
 // ============ DASHBOARD ============
@@ -73,12 +86,87 @@ export const dashboardAPI = {
       method: 'POST',
       body: JSON.stringify({ insightId, category, data }),
     }),
+
+  getProfileStats: () => fetchAPI('/dashboard/profile-stats'),
 };
+
+// ============ REPORTS (Excel Export) ============
+export const reportAPI = {
+  exportOrders: async (params = {}) => {
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    );
+    const query = new URLSearchParams(cleanParams).toString();
+    const url = `${API_BASE}/reports/orders/export${query ? `?${query}` : ''}`;
+    const token = getSession();
+
+    const response = await fetch(url, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+
+    if (!response.ok) throw new Error('Export failed');
+
+    const blob = await response.blob();
+    const filename = response.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] || 'orders.xlsx';
+    downloadBlob(blob, filename);
+  },
+
+  exportRevenue: async (days = 30) => {
+    const url = `${API_BASE}/reports/revenue/export?days=${days}`;
+    const token = getSession();
+
+    const response = await fetch(url, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+
+    if (!response.ok) throw new Error('Export failed');
+
+    const blob = await response.blob();
+    const filename = response.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] || 'revenue.xlsx';
+    downloadBlob(blob, filename);
+  },
+
+  exportInventory: async (lowStock = false) => {
+    const url = `${API_BASE}/reports/inventory/export${lowStock ? '?lowStock=true' : ''}`;
+    const token = getSession();
+
+    const response = await fetch(url, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+
+    if (!response.ok) throw new Error('Export failed');
+
+    const blob = await response.blob();
+    const filename = response.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] || 'inventory.xlsx';
+    downloadBlob(blob, filename);
+  },
+
+  printInvoice: (orderId) => {
+    const url = `${API_BASE}/orders/${orderId}/invoice`;
+    window.open(url, '_blank');
+  },
+};
+
+// Helper to trigger file download
+function downloadBlob(blob, filename) {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+}
 
 // ============ PRODUCTS ============
 export const productAPI = {
   getAll: (params = {}) => {
-    const query = new URLSearchParams(params).toString();
+    // Filter out undefined, null, and empty string values
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    );
+    const query = new URLSearchParams(cleanParams).toString();
     return fetchAPI(`/products${query ? `?${query}` : ''}`);
   },
 
@@ -135,9 +223,10 @@ export const productAPI = {
       method: 'DELETE',
     }),
 
-  getFeatured: () => fetchAPI('/products/featured'),
-  getNew: () => fetchAPI('/products/new'),
-  getTopSelling: (limit = 10) => fetchAPI(`/products/top-selling?limit=${limit}`),
+  getFeatured: () => fetchAPI('/products/list/featured'),
+  getNew: () => fetchAPI('/products/list/new'),
+  getFlashSale: () => fetchAPI('/products/list/flash-sale'),
+  getTopSelling: (limit = 10) => fetchAPI(`/products/list/top-selling?limit=${limit}`),
 };
 
 // ============ ORDERS ============
@@ -170,10 +259,33 @@ export const orderAPI = {
       method: 'PATCH',
     }),
 
+  // Track order by code and phone (for guest customers)
+  track: (orderCode, phone) => {
+    const params = new URLSearchParams({ orderCode, phone }).toString();
+    return fetch(`${API_BASE}/orders/track?${params}`)
+      .then(res => {
+        if (!res.ok) {
+          if (res.status === 403) {
+            return res.json().then(data => ({ error: data.error }));
+          }
+          if (res.status === 404) {
+            return { error: 'Không tìm thấy đơn hàng với mã này' };
+          }
+          throw new Error('Network error');
+        }
+        return res.json();
+      });
+  },
+
   getByCustomer: (customerId, params = {}) => {
     const query = new URLSearchParams({ ...params, customerId }).toString();
     return fetchAPI(`/orders?${query}`);
   },
+
+  confirmPayment: (id) =>
+    fetchAPI(`/orders/${id}/confirm-payment`, {
+      method: 'PATCH',
+    }),
 };
 
 // ============ CUSTOMERS ============
@@ -241,19 +353,124 @@ export const categoryAPI = {
   getAll: () => fetchAPI('/categories'),
   getFlat: () => fetchAPI('/categories/flat'),
   getById: (id) => fetchAPI(`/categories/${id}`),
+  create: (data) =>
+    fetchAPI('/categories', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id, data) =>
+    fetchAPI(`/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id) =>
+    fetchAPI(`/categories/${id}`, { method: 'DELETE' }),
 };
 
 // ============ COLORS, SIZES, BRANDS ============
 export const colorAPI = {
   getAll: () => fetchAPI('/colors'),
+  getById: (id) => fetchAPI(`/colors/${id}`),
+  create: (data) =>
+    fetchAPI('/colors', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id, data) =>
+    fetchAPI(`/colors/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id) =>
+    fetchAPI(`/colors/${id}`, { method: 'DELETE' }),
 };
 
 export const sizeAPI = {
   getAll: () => fetchAPI('/sizes'),
+  getById: (id) => fetchAPI(`/sizes/${id}`),
+  create: (data) =>
+    fetchAPI('/sizes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id, data) =>
+    fetchAPI(`/sizes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id) =>
+    fetchAPI(`/sizes/${id}`, { method: 'DELETE' }),
+  reorder: (orders) =>
+    fetchAPI('/sizes/reorder', {
+      method: 'PUT',
+      body: JSON.stringify(orders),
+    }),
 };
 
 export const brandAPI = {
   getAll: () => fetchAPI('/brands'),
+  getById: (id) => fetchAPI(`/brands/${id}`),
+  create: (data) =>
+    fetchAPI('/brands', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id, data) =>
+    fetchAPI(`/brands/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id) =>
+    fetchAPI(`/brands/${id}`, { method: 'DELETE' }),
+};
+
+// ============ REVIEWS ============
+export const reviewAPI = {
+  // Shop: Get approved reviews for a product
+  getProductReviews: (productId, customerId = null) => {
+    const query = customerId ? `?customerId=${customerId}` : '';
+    return fetchAPI(`/reviews/product/${productId}${query}`);
+  },
+
+  // Shop: Create a new review
+  create: (data) =>
+    fetchAPI('/reviews', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Admin: Get all reviews with pagination and filters
+  getAll: (params = {}) => {
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    );
+    const query = new URLSearchParams(cleanParams).toString();
+    return fetchAPI(`/reviews${query ? `?${query}` : ''}`);
+  },
+
+  // Admin: Get single review
+  getById: (id) => fetchAPI(`/reviews/${id}`),
+
+  // Admin: Update review status (approve/reject)
+  updateStatus: (id, status) =>
+    fetchAPI(`/reviews/${id}/status?status=${status}`, { method: 'PATCH' }),
+
+  // Admin: Reply to review
+  reply: (id, reply) =>
+    fetchAPI(`/reviews/${id}/reply`, {
+      method: 'PATCH',
+      body: JSON.stringify({ reply }),
+    }),
+
+  // Admin: Delete review
+  delete: (id) => fetchAPI(`/reviews/${id}`, { method: 'DELETE' }),
+
+  // Admin: Bulk approve reviews
+  bulkApprove: (ids) =>
+    fetchAPI('/reviews/bulk-approve', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
 };
 
 // ============ SHOP API HELPERS ============
@@ -345,7 +562,8 @@ export const ORDER_STATUS = {
   CONFIRMED: 'Đã xác nhận',
   PROCESSING: 'Đang xử lý',
   SHIPPING: 'Đang giao',
-  DELIVERED: 'Hoàn tất',
+  DELIVERED: 'Đã giao hàng',
+  COMPLETED: 'Hoàn tất',
   CANCELLED: 'Đã hủy',
   RETURNED: 'Hoàn trả',
 };
@@ -366,10 +584,10 @@ export const aiAPI = {
       body: JSON.stringify({ message, context }),
     }),
 
-  shopChat: (message) =>
+  shopChat: (message, customerId = null) =>
     fetchAPI('/ai/shop-chat', {
       method: 'POST',
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, customerId }),
     }),
 
   adminChat: (message) =>
@@ -379,6 +597,12 @@ export const aiAPI = {
     }),
 
   getAdminSummary: () => fetchAPI('/ai/admin-summary'),
+
+  // AI Size Advisor
+  suggestSize: (productId, height, weight, fit = 'regular') => {
+    const params = new URLSearchParams({ productId, height, weight, fit }).toString();
+    return fetchAPI(`/ai/size-advisor?${params}`);
+  },
 
   // AI Product Management
   generateDescription: (productName, category) =>
@@ -449,7 +673,8 @@ export const featuredAPI = {
 // ============ PROMOTION API ============
 export const promotionAPI = {
   getAll: () => fetchAPI('/promotions'),
-  getActive: () => fetchAPI('/promotions/active'),
+  getActive: () => fetchAPI('/promotions/list/active'),
+  getFlashSales: () => fetchAPI('/promotions/list/flash-sale'),
   getById: (id) => fetchAPI(`/promotions/${id}`),
   create: (data) =>
     fetchAPI('/promotions', {
@@ -477,6 +702,74 @@ export const promotionAPI = {
     }),
 };
 
+// ============ LUCKY SPIN API ============
+export const luckySpinAPI = {
+  // Get spin wheel info (requires customer auth)
+  getInfo: (token) =>
+    fetchAPI('/lucky-spin/info', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    }),
+
+  // Perform a free spin
+  play: (token) =>
+    fetchAPI('/lucky-spin/play', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    }),
+
+  // Exchange points for a spin
+  exchangePoints: (token) =>
+    fetchAPI('/lucky-spin/exchange-points', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    }),
+
+  // Get customer's coupons
+  getMyCoupons: (token, status = 'all') =>
+    fetchAPI(`/customer/coupons?status=${status}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    }),
+
+  // Get active coupons count
+  getCouponCount: (token) =>
+    fetchAPI('/customer/coupons/count', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    }),
+
+  // Validate a coupon for checkout
+  validateCoupon: (token, code, orderSubtotal) =>
+    fetchAPI('/customer/coupons/validate', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ code, orderSubtotal }),
+    }),
+};
+
+// ============ LUCKY SPIN ADMIN API ============
+export const luckySpinAdminAPI = {
+  getAdminInfo: () => fetchAPI('/admin/lucky-spin/info'),
+  updateProgram: (data) =>
+    fetchAPI('/admin/lucky-spin/program', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  updateReward: (id, data) =>
+    fetchAPI(`/admin/lucky-spin/rewards/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+};
+
+// ============ NIGHT MARKET ADMIN API ============
+export const nightMarketAdminAPI = {
+  getConfig: () => fetchAPI('/admin/night-market/config'),
+  updateConfig: (data) =>
+    fetchAPI('/admin/night-market/config', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+};
+
 // ============ POINTS API ============
 export const pointsAPI = {
   getBalance: (customerId) => fetchAPI(`/points/balance/${customerId}`),
@@ -491,6 +784,70 @@ export const pointsAPI = {
     fetchAPI(`/points/tiers/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    }),
+};
+
+// ============ STAFF API ============
+export const staffAPI = {
+  getAll: (role) => {
+    const query = role ? `?role=${role}` : '';
+    return fetchAPI(`/staff${query}`);
+  },
+  getById: (id) => fetchAPI(`/staff/${id}`),
+  getRoles: () => fetchAPI('/staff/roles'),
+  create: (data) =>
+    fetchAPI('/staff', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  update: (id, data) =>
+    fetchAPI(`/staff/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  changePassword: (id, newPassword) =>
+    fetchAPI(`/staff/${id}/password`, {
+      method: 'PUT',
+      body: JSON.stringify({ newPassword }),
+    }),
+  toggleStatus: (id) =>
+    fetchAPI(`/staff/${id}/toggle-status`, {
+      method: 'PUT',
+    }),
+  delete: (id) =>
+    fetchAPI(`/staff/${id}`, { method: 'DELETE' }),
+};
+
+// ============ SHIPPING API ============
+export const shippingAPI = {
+  pushToGHTK: (orderId) =>
+    fetchAPI(`/shipping/ghtk/push/${orderId}`, { method: 'POST' }),
+  getTracking: (orderId) => fetchAPI(`/shipping/tracking/${orderId}`),
+};
+
+// ============ ACTIVITY LOGS API ============
+export const activityLogAPI = {
+  getAll: (params = {}) => {
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    );
+    const query = new URLSearchParams(cleanParams).toString();
+    return fetchAPI(`/activity-logs${query ? `?${query}` : ''}`);
+  },
+
+  getById: (id) => fetchAPI(`/activity-logs/${id}`),
+};
+
+// ============ NIGHT MARKET API ============
+export const nightMarketAPI = {
+  getOffers: (token) =>
+    fetchAPI('/night-market/offers', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }),
+  revealOffer: (id, token) =>
+    fetchAPI(`/night-market/reveal/${id}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
     }),
 };
 
@@ -509,5 +866,8 @@ export default {
   notification: notificationAPI,
   promotion: promotionAPI,
   points: pointsAPI,
+  luckySpin: luckySpinAPI,
+  luckySpinAdmin: luckySpinAdminAPI,
+  nightMarket: nightMarketAPI,
 };
 

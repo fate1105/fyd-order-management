@@ -3,21 +3,25 @@ import { useNavigate } from "react-router-dom";
 import "../styles/dashboard.css";
 import "../styles/pages.css";
 import { useFeaturedZones, createNewZone } from "../hooks/useFeaturedZone";
-
-const POSITIONS = {
-    home_hero: "Trang chủ - Hero",
-    home_featured: "Trang chủ - Nổi bật",
-    home_bottom: "Trang chủ - Cuối trang",
-    category_top: "Category - Đầu trang",
-    category_bottom: "Category - Cuối trang"
-};
+import { useToast } from "@shared/context/ToastContext";
+import { useTranslation } from "react-i18next";
 
 export default function FeaturedZones() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { zones, loading, createZone, deleteZone, toggleZone } = useFeaturedZones();
     const [creating, setCreating] = useState(false);
     const [newZoneName, setNewZoneName] = useState("");
     const [deletingId, setDeletingId] = useState(null);
+    const { showToast } = useToast();
+
+    const POSITIONS = {
+        home_hero: t("featured.pos_home_hero"),
+        home_featured: t("featured.pos_home_featured"),
+        home_bottom: t("featured.pos_home_bottom"),
+        category_top: t("featured.pos_cat_top"),
+        category_bottom: t("featured.pos_cat_bottom")
+    };
 
     const handleCreate = async () => {
         if (!newZoneName.trim()) return;
@@ -30,18 +34,20 @@ export default function FeaturedZones() {
             setCreating(false);
             setNewZoneName("");
             navigate(`/admin/featured/${created.id}`);
+            showToast(t("featured.msg_create_success"));
         } catch (error) {
-            alert("Không thể tạo khu vực: " + error.message);
+            showToast(t("common.error_occurred") + ": " + error.message, "error");
         }
     };
 
     const handleDelete = async (id, name) => {
-        if (!window.confirm(`Xóa khu vực "${name}"?`)) return;
+        if (!window.confirm(t("featured.delete_confirm", { name }))) return;
         setDeletingId(id);
         try {
             await deleteZone(id);
+            showToast(t("featured.msg_delete_success"));
         } catch (error) {
-            alert("Không thể xóa: " + error.message);
+            showToast(t("common.error_occurred") + ": " + error.message, "error");
         } finally {
             setDeletingId(null);
         }
@@ -51,11 +57,11 @@ export default function FeaturedZones() {
         <div className="card">
             <div className="cardHead">
                 <div>
-                    <div className="cardTitle">Khu vực sản phẩm nổi bật</div>
-                    <div className="cardSub">Quản lý các khu vực hiển thị sản phẩm nổi bật trên website</div>
+                    <div className="cardTitle">{t("featured.title")}</div>
+                    <div className="cardSub">{t("featured.subtitle")}</div>
                 </div>
                 <button className="btnPrimary" onClick={() => setCreating(true)}>
-                    + Tạo khu vực
+                    + {t("featured.btn_add")}
                 </button>
             </div>
 
@@ -63,25 +69,25 @@ export default function FeaturedZones() {
             {creating && (
                 <div className="modal-overlay" onClick={() => setCreating(false)}>
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <h3>Tạo khu vực mới</h3>
+                        <h3>{t("featured.modal_add")}</h3>
                         <input
                             type="text"
                             className="input"
-                            placeholder="Tên khu vực (VD: Sản phẩm nổi bật)"
+                            placeholder={t("featured.placeholder_name")}
                             value={newZoneName}
                             onChange={e => setNewZoneName(e.target.value)}
                             autoFocus
                         />
                         <div className="modal-actions">
-                            <button className="btn" onClick={() => setCreating(false)}>Hủy</button>
-                            <button className="btnPrimary" onClick={handleCreate}>Tạo</button>
+                            <button className="btn" onClick={() => setCreating(false)}>{t("common.cancel")}</button>
+                            <button className="btnPrimary" onClick={handleCreate}>{t("common.create")}</button>
                         </div>
                     </div>
                 </div>
             )}
 
             {loading ? (
-                <div style={{ padding: '40px', textAlign: 'center' }}>Đang tải...</div>
+                <div style={{ padding: '40px', textAlign: 'center' }}>{t("common.loading")}...</div>
             ) : zones.length === 0 ? (
                 <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--admin-text-muted)' }}>
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: 16, opacity: 0.5 }}>
@@ -89,18 +95,18 @@ export default function FeaturedZones() {
                         <path d="M3 9h18" />
                         <path d="M9 21V9" />
                     </svg>
-                    <p>Chưa có khu vực nào</p>
+                    <p>{t("common.empty_state")}</p>
                     <button className="btnPrimary" style={{ marginTop: 16 }} onClick={() => setCreating(true)}>
-                        + Tạo khu vực đầu tiên
+                        + {t("featured.btn_add_first")}
                     </button>
                 </div>
             ) : (
                 <div className="table">
                     <div className="tr th">
-                        <div style={{ flex: 2 }}>Tên khu vực</div>
-                        <div style={{ flex: 1 }}>Vị trí</div>
-                        <div style={{ width: 80, textAlign: 'center' }}>Sản phẩm</div>
-                        <div style={{ width: 100, textAlign: 'center' }}>Trạng thái</div>
+                        <div style={{ flex: 2 }}>{t("common.name")}</div>
+                        <div style={{ flex: 1 }}>{t("featured.col_position")}</div>
+                        <div style={{ width: 80, textAlign: 'center' }}>{t("common.products")}</div>
+                        <div style={{ width: 100, textAlign: 'center' }}>{t("common.status")}</div>
                         <div style={{ width: 120 }}></div>
                     </div>
 
@@ -122,7 +128,7 @@ export default function FeaturedZones() {
                                 <button
                                     className={`toggle ${zone.isActive ? 'on' : ''}`}
                                     onClick={() => toggleZone(zone.id)}
-                                    title={zone.isActive ? 'Đang bật' : 'Đang tắt'}
+                                    title={zone.isActive ? t("common.on") : t("common.off")}
                                 >
                                     <span className="toggle-dot" />
                                 </button>
@@ -132,14 +138,14 @@ export default function FeaturedZones() {
                                     className="btnSmall"
                                     onClick={() => navigate(`/admin/featured/${zone.id}`)}
                                 >
-                                    Sửa
+                                    {t("common.edit")}
                                 </button>
                                 <button
                                     className="btnSmall danger"
                                     onClick={() => handleDelete(zone.id, zone.name)}
                                     disabled={deletingId === zone.id}
                                 >
-                                    {deletingId === zone.id ? 'Đang xóa...' : 'Xóa'}
+                                    {deletingId === zone.id ? t("common.deleting") + "..." : t("common.delete")}
                                 </button>
                             </div>
                         </div>

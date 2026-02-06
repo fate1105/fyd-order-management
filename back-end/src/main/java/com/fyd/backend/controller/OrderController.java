@@ -2,12 +2,21 @@ package com.fyd.backend.controller;
 
 import com.fyd.backend.dto.CreateOrderRequest;
 import com.fyd.backend.dto.OrderDTO;
+import com.fyd.backend.annotation.Loggable;
 import com.fyd.backend.entity.Notification;
 import com.fyd.backend.entity.Order;
 import com.fyd.backend.entity.OrderItem;
 import com.fyd.backend.repository.*;
+import com.fyd.backend.entity.CustomerCoupon;
+import com.fyd.backend.entity.PaymentTransaction;
+import com.fyd.backend.service.CustomerCouponService;
+import com.fyd.backend.service.EmailService;
 import com.fyd.backend.service.PointsService;
+import com.fyd.backend.service.VNPayService;
+import com.fyd.backend.service.MoMoService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -50,6 +59,35 @@ public class OrderController {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private CustomerCouponService customerCouponService;
+
+    @Autowired
+    private VNPayService vnpayService;
+
+    @Autowired
+    private MoMoService momoService;
+
+    @Autowired
+    private PaymentTransactionRepository paymentTransactionRepository;
+
+    @Autowired(required = false)
+    private EmailService emailService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
+    private static final Map<String, String> ORDER_STATUS_NAMES = Map.of(
+        "PENDING", "Chờ xử lý",
+        "CONFIRMED", "Đã xác nhận",
+        "PROCESSING", "Đang xử lý",
+        "SHIPPING", "Đang giao",
+        "DELIVERED", "Đã giao hàng",
+        "COMPLETED", "Hoàn tất",
+        "PENDING_CANCEL", "Chờ duyệt hủy",
+        "CANCELLED", "Đã hủy"
+    );
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getOrders(
@@ -132,31 +170,183 @@ public class OrderController {
             .orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * Track order by code and phone - for guest customers
+     * Requires both order code AND phone number for security
+     */
+    @GetMapping("/track")
+    public ResponseEntity<?> trackOrder(
+            @RequestParam String orderCode,
+            @RequestParam String phone) {
+        // Normalize phone number (remove spaces, dashes)
+        String normalizedPhone = phone.replaceAll("[\\s\\-]", "");
+        
+        return orderRepository.findByOrderCode(orderCode)
+            .map(order -> {
+                // Verify phone matches the order
+                String orderPhone = order.getShippingPhone();
+                if (orderPhone != null) {
+                    orderPhone = orderPhone.replaceAll("[\\s\\-]", "");
+                }
+                
+                if (orderPhone == null || !orderPhone.equals(normalizedPhone)) {
+                    return ResponseEntity.status(403)
+                        .body(Map.of("error", "Số điện thoại không khớp với đơn hàng"));
+                }
+                
+                // Return limited order info for tracking
+                Map<String, Object> trackingInfo = new HashMap<>();
+                trackingInfo.put("orderCode", order.getOrderCode());
+                trackingInfo.put("status", order.getStatus());
+                trackingInfo.put("paymentStatus", order.getPaymentStatus());
+                trackingInfo.put("paymentMethod", order.getPaymentMethod());
+                trackingInfo.put("shippingName", order.getShippingName());
+                trackingInfo.put("shippingAddress", order.getShippingAddress());
+                trackingInfo.put("shippingDistrict", order.getShippingDistrict());
+                trackingInfo.put("shippingProvince", order.getShippingProvince());
+                trackingInfo.put("totalAmount", order.getTotalAmount());
+                trackingInfo.put("createdAt", order.getCreatedAt());
+                trackingInfo.put("confirmedAt", order.getConfirmedAt());
+                trackingInfo.put("deliveredAt", order.getDeliveredAt());
+                
+                // Include items summary
+                if (order.getItems() != null) {
+                    trackingInfo.put("itemCount", order.getItems().size());
+                    trackingInfo.put("items", order.getItems().stream()
+                        .map(item -> Map.of(
+                            "name", item.getProductName(),
+                            "variant", item.getVariantInfo() != null ? item.getVariantInfo() : "",
+                            "quantity", item.getQuantity(),
+                            "price", item.getUnitPrice()
+                        ))
+                        .collect(Collectors.toList()));
+                }
+                
+                return ResponseEntity.ok(trackingInfo);
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @Autowired(required = false)
+    private com.fyd.backend.service.InvoiceService invoiceService;
+
+    @GetMapping("/{id}/invoice")
+    public ResponseEntity<String> getInvoice(@PathVariable Long id) {
+        return orderRepository.findById(id)
+            .map(order -> {
+                if (invoiceService == null) {
+                    return ResponseEntity.internalServerError().<String>body("Invoice service not available");
+                }
+                String html = invoiceService.generateInvoiceHtml(order);
+                return ResponseEntity.ok()
+                    .header("Content-Type", "text/html; charset=UTF-8")
+                    .body(html);
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
     @PatchMapping("/{id}/status")
-    public ResponseEntity<OrderDTO> updateStatus(
+    @Loggable(action = "UPDATE", entityType = "Order")
+    public ResponseEntity<?> updateStatus(
             @PathVariable Long id,
             @RequestParam String status) {
         return orderRepository.findById(id)
             .map(order -> {
+                String currentStatus = order.getStatus();
+                
+                // 1. If same status, just return
+                if (status.equals(currentStatus)) {
+                    return ResponseEntity.ok(OrderDTO.fromEntity(order));
+                }
+
+                // 2. Validate strictly sequential status transition
+                boolean allowed = false;
+                if ("CANCELLED".equals(status)) {
+                    // Can cancel at any stage except after completion
+                    allowed = !"COMPLETED".equals(currentStatus);
+                } else if ("PENDING".equals(currentStatus)) {
+                    // From PENDING, can move to CONFIRMED or PENDING_CANCEL (by system/customer request)
+                    allowed = "CONFIRMED".equals(status) || "PENDING_CANCEL".equals(status);
+                } else if ("PENDING_CANCEL".equals(currentStatus)) {
+                    // From PENDING_CANCEL, admin can confirm (move to CONFIRMED) or accept cancellation (move to CANCELLED)
+                    allowed = "CONFIRMED".equals(status) || "CANCELLED".equals(status);
+                } else if ("CONFIRMED".equals(currentStatus)) {
+                    allowed = "PROCESSING".equals(status);
+                } else if ("PROCESSING".equals(currentStatus)) {
+                    allowed = "SHIPPING".equals(status);
+                } else if ("SHIPPING".equals(currentStatus)) {
+                    allowed = "DELIVERED".equals(status);
+                } else if ("DELIVERED".equals(currentStatus)) {
+                    allowed = "COMPLETED".equals(status);
+                }
+
+                if (!allowed) {
+                    return ResponseEntity.badRequest().body(Map.of("error", 
+                        String.format("Quy trình bắt buộc: Không thể chuyển từ '%s' sang '%s'. Vui lòng thực hiện theo từng bước.", 
+                        ORDER_STATUS_NAMES.getOrDefault(currentStatus, currentStatus), 
+                        ORDER_STATUS_NAMES.getOrDefault(status, status))));
+                }
+
+                // 3. Business logic for specific statuses
                 order.setStatus(status);
                 order.setUpdatedAt(LocalDateTime.now());
                 
-                // If cancelled, set cancelled timestamp
-                if ("CANCELLED".equals(status)) {
-                    order.setCancelledAt(LocalDateTime.now());
+                if ("CONFIRMED".equals(status)) {
+                    if (order.getConfirmedAt() == null) order.setConfirmedAt(LocalDateTime.now());
+                } else if ("DELIVERED".equals(status) || "COMPLETED".equals(status)) {
+                    if (order.getDeliveredAt() == null) order.setDeliveredAt(LocalDateTime.now());
+                    
+                    // If COD, mark as paid automatically
+                    if ("COD".equalsIgnoreCase(order.getPaymentMethod())) {
+                        order.setPaymentStatus("PAID");
+                        if (order.getPaidAt() == null) {
+                            order.setPaidAt(LocalDateTime.now());
+                        }
+                    }
+                } else if ("CANCELLED".equals(status)) {
+                    if (order.getCancelledAt() == null) order.setCancelledAt(LocalDateTime.now());
                 }
                 
                 Order saved = orderRepository.save(order);
 
-                // Create notification for status update
+                // 3. Communications
                 createStatusNotification(saved);
+                if (emailService != null) {
+                    try {
+                        emailService.sendOrderStatusUpdate(saved);
+                    } catch (Exception e) {
+                        // Log error but don't fail the request
+                        System.err.println("Failed to send status update email: " + e.getMessage());
+                    }
+                }
 
                 return ResponseEntity.ok(OrderDTO.fromEntity(saved));
             })
             .orElse(ResponseEntity.notFound().build());
     }
 
+    @PatchMapping("/{id}/confirm-payment")
+    @Loggable(action = "UPDATE", entityType = "Order")
+    public ResponseEntity<?> confirmPayment(@PathVariable Long id) {
+        return orderRepository.findById(id)
+            .map(order -> {
+                // Create a notification for admin
+                Notification notification = new Notification();
+                notification.setType("order");
+                notification.setPriority("high");
+                notification.setTitle("Xác nhận thanh toán");
+                notification.setDescription("Khách hàng @" + order.getCustomer().getFullName() + " xác nhận đã thanh toán đơn #" + order.getOrderCode());
+                notification.setActionType("navigate");
+                notification.setActionUrl("/admin/orders");
+                notificationRepository.save(notification);
+
+                return ResponseEntity.ok(Map.of("message", "Đã ghi nhận thông báo thanh toán"));
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
     @PatchMapping("/{id}/cancel-request")
+    @Loggable(action = "UPDATE", entityType = "Order")
     public ResponseEntity<?> requestCancellation(
             @PathVariable Long id,
             @RequestParam String reason) {
@@ -198,7 +388,8 @@ public class OrderController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequest request) {
+    @Loggable(action = "CREATE", entityType = "Order")
+    public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequest request, HttpServletRequest httpRequest) {
         try {
             // 1. Validate customer
             var customer = customerRepository.findById(request.getCustomerId())
@@ -278,7 +469,7 @@ public class OrderController {
             // 3. Calculate Discounts
             BigDecimal totalDiscount = BigDecimal.ZERO;
 
-            // 3a. Promotion Discount
+            // 3a. Promotion Discount (public promotion codes)
             String promoCode = request.getPromotionCode();
             BigDecimal promoDiscount = BigDecimal.ZERO;
             if (promoCode != null && !promoCode.isEmpty()) {
@@ -293,11 +484,31 @@ public class OrderController {
                 }
             }
 
-            // 3b. Tier Discount
+            // 3b. Customer Coupon Discount (from Lucky Spin - bound to customer)
+            String customerCouponCode = request.getCustomerCouponCode();
+            CustomerCoupon usedCoupon = null;
+            BigDecimal couponDiscount = BigDecimal.ZERO;
+            if (customerCouponCode != null && !customerCouponCode.isEmpty()) {
+                var validationResult = customerCouponService.validateCoupon(
+                        customerCouponCode.trim().toUpperCase(), 
+                        customer.getId(), 
+                        subtotal);
+                
+                if (validationResult.isValid()) {
+                    couponDiscount = validationResult.getDiscountAmount();
+                    totalDiscount = totalDiscount.add(couponDiscount);
+                    usedCoupon = customerCouponService.getCouponByCode(customerCouponCode.trim().toUpperCase())
+                            .orElse(null);
+                } else {
+                    return ResponseEntity.badRequest().body(Map.of("error", validationResult.getMessage()));
+                }
+            }
+
+            // 3c. Tier Discount
             BigDecimal tierDiscount = pointsService.calculateTierDiscount(customer, subtotal);
             totalDiscount = totalDiscount.add(tierDiscount);
 
-            // 3c. Points Discount
+            // 3d. Points Discount
             BigDecimal pointsDiscountPrice = BigDecimal.ZERO;
             int pointsUsed = request.getPointsUsed() != null ? request.getPointsUsed() : 0;
             if (pointsUsed > 0) {
@@ -361,6 +572,11 @@ public class OrderController {
             customer.setTotalSpent(customer.getTotalSpent().add(savedOrder.getTotalAmount()));
             customerRepository.save(customer);
 
+            // 6b. Mark customer coupon as used (if any)
+            if (usedCoupon != null) {
+                customerCouponService.useCoupon(usedCoupon.getCode(), customer.getId(), savedOrder);
+            }
+
             // 7. Create notification for new order
             Notification notification = new Notification();
             notification.setType("order");
@@ -370,8 +586,59 @@ public class OrderController {
             notification.setActionType("navigate");
             notification.setActionUrl("/admin/orders");
             notificationRepository.save(notification);
+
+            // 7b. Broadcast new order notification via WebSocket
+            try {
+                messagingTemplate.convertAndSend("/topic/notifications", Map.of(
+                    "type", "order",
+                    "title", "Đơn hàng mới",
+                    "message", "Đơn hàng mới #" + orderCode + " từ " + request.getShippingName(),
+                    "orderId", savedOrder.getId(),
+                    "orderCode", orderCode,
+                    "timestamp", LocalDateTime.now().toString()
+                ));
+            } catch (Exception e) {
+                // Log but don't fail the order process
+                System.err.println("Failed to broadcast WebSocket notification: " + e.getMessage());
+            }
+
+            // 8. Send order confirmation email
+            if (emailService != null) {
+                emailService.sendOrderConfirmation(savedOrder);
+            }
+
+            OrderDTO responseDto = OrderDTO.fromEntity(savedOrder);
+
+            // 9. Generate payment URL if method is VNPAY
+            if ("VNPAY".equalsIgnoreCase(savedOrder.getPaymentMethod())) {
+                String paymentUrl = vnpayService.createPaymentUrl(savedOrder, httpRequest);
+                
+                // Create payment transaction
+                PaymentTransaction transaction = new PaymentTransaction();
+                transaction.setOrder(savedOrder);
+                transaction.setProvider("VNPAY");
+                transaction.setAmount(savedOrder.getTotalAmount());
+                transaction.setStatus("PENDING");
+                transaction.setPaymentUrl(paymentUrl);
+                paymentTransactionRepository.save(transaction);
+                
+                responseDto.setPaymentUrl(paymentUrl);
+            } else if ("MOMO".equalsIgnoreCase(savedOrder.getPaymentMethod())) {
+                String paymentUrl = momoService.createPaymentUrl(savedOrder);
+                
+                // Create payment transaction
+                PaymentTransaction transaction = new PaymentTransaction();
+                transaction.setOrder(savedOrder);
+                transaction.setProvider("MOMO");
+                transaction.setAmount(savedOrder.getTotalAmount());
+                transaction.setStatus("PENDING");
+                transaction.setPaymentUrl(paymentUrl);
+                paymentTransactionRepository.save(transaction);
+                
+                responseDto.setPaymentUrl(paymentUrl);
+            }
             
-            return ResponseEntity.ok(OrderDTO.fromEntity(savedOrder));
+            return ResponseEntity.ok(responseDto);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError()

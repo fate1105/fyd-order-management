@@ -13,17 +13,33 @@ import {
   Revenue,
   Inventory,
   Promotions,
+  GiftCards,
   Tiers,
   Profile,
   FeaturedZones,
-  FeaturedZoneEditor
+  FeaturedZoneEditor,
+  LuckySpin,
+  NightMarketAdmin,
+  Staff,
+  Categories,
+  ColorsAndSizes,
+  Reviews,
+  ActivityLogs,
+  EventVouchers
 } from "@admin";
 
 // Auth feature
 import { Login, VerifyOtp } from "@auth";
 
 // Shop feature
-import { Shop, CustomerProfile, Checkout, OrderSuccess, ProductDetail } from "@shop";
+import { Shop, CustomerProfile, Checkout, OrderSuccess, ProductDetail, InfoPage, PaymentCallback, CompareModal, CompareDrawer, SharedWishlistPage, TrackOrder, NightMarket } from "@shop";
+
+import { ToastProvider } from "@shared/context/ToastContext";
+import { ConfirmProvider } from "@shared/context/ConfirmContext";
+import { CompareProvider } from "@shared/context/CompareContext";
+import { CartProvider } from "@shared/context/CartContext";
+import ProtectedRoute from "@shared/components/ProtectedRoute.jsx";
+import ReloadPrompt from "@shared/components/ReloadPrompt.jsx";
 
 export default function App() {
   // Initialize Facebook SDK on mount
@@ -32,41 +48,78 @@ export default function App() {
   }, []);
 
   return (
-    <Routes>
-      {/* Default route -> Shop */}
-      <Route path="/" element={<Navigate to="/shop" replace />} />
+    <ConfirmProvider>
+      <ToastProvider>
+        <CompareProvider>
+          <CartProvider>
+            <Routes>
+              {/* Default route -> Shop */}
+              <Route path="/" element={<Navigate to="/shop" replace />} />
 
-      {/* Shop pages */}
-      <Route path="/shop" element={<Shop />} />
-      <Route path="/shop/product/:productId" element={<ProductDetail />} />
-      <Route path="/shop/profile" element={<CustomerProfile />} />
-      <Route path="/shop/checkout" element={<Checkout />} />
-      <Route path="/shop/order-success/:orderId" element={<OrderSuccess />} />
+              {/* Shop pages */}
+              <Route path="/shop" element={<><Shop /><CompareDrawer /><CompareModal /></>} />
+              <Route path="/shop/product/:productId" element={<><ProductDetail /><CompareDrawer /><CompareModal /></>} />
+              <Route path="/shop/profile" element={<CustomerProfile />} />
+              <Route path="/shop/checkout" element={<Checkout />} />
+              <Route path="/shop/order-success/:orderId" element={<OrderSuccess />} />
+              <Route path="/shop/payment-callback" element={<PaymentCallback />} />
+              <Route path="/shop/info/:slug" element={<InfoPage />} />
+              <Route path="/shop/wishlist/:shareCode" element={<SharedWishlistPage />} />
+              <Route path="/shop/track-order" element={<TrackOrder />} />
+              <Route path="/shop/night-market" element={<NightMarket />} />
 
-      <Route path="/admin/login" element={<Login />} />
-      <Route path="/admin/verify-otp" element={<VerifyOtp />} />
+              <Route path="/admin/login" element={<Login />} />
+              <Route path="/admin/verify-otp" element={<VerifyOtp />} />
 
-      {/* Admin pages (protected) */}
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="orders" element={<Orders />} />
-        <Route path="products" element={<Products />} />
-        <Route path="customers" element={<Customers />} />
-        <Route path="ai" element={<AI />} />
-        <Route path="revenue" element={<Revenue />} />
-        <Route path="inventory" element={<Inventory />} />
-        <Route path="promotions" element={<Promotions />} />
-        <Route path="tiers" element={<Tiers />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="featured" element={<FeaturedZones />} />
-        <Route path="featured/:id" element={<FeaturedZoneEditor />} />
-      </Route>
+              {/* Admin pages (protected) */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Dashboard />} />
+                <Route path="orders" element={<Orders />} />
+                <Route path="products" element={<Products />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="ai" element={<AI />} />
+                <Route path="revenue" element={<Revenue />} />
+                <Route path="inventory" element={<Inventory />} />
+                <Route path="promotions" element={<Promotions />} />
+                <Route path="gift-cards" element={<GiftCards />} />
+                <Route path="tiers" element={<Tiers />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="featured" element={<FeaturedZones />} />
+                <Route path="featured/:id" element={<FeaturedZoneEditor />} />
+                <Route path="lucky-spin" element={<LuckySpin />} />
+                <Route path="night-market" element={<NightMarketAdmin />} />
+                <Route
+                  path="staff"
+                  element={
+                    <ProtectedRoute permission="staff:read">
+                      <Staff />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="categories" element={<Categories />} />
+                <Route path="colors-sizes" element={<ColorsAndSizes />} />
+                <Route path="reviews" element={<Reviews />} />
+                <Route path="activity-logs" element={<ActivityLogs />} />
+                <Route path="event-vouchers" element={<EventVouchers />} />
+              </Route>
 
-      {/* Legacy redirects */}
-      <Route path="/login" element={<Navigate to="/admin/login" replace />} />
+              {/* Legacy redirects */}
+              <Route path="/login" element={<Navigate to="/admin/login" replace />} />
 
-      {/* Catch all */}
-      <Route path="*" element={<Navigate to="/shop" replace />} />
-    </Routes>
+              {/* Catch all */}
+              <Route path="*" element={<Navigate to="/shop" replace />} />
+            </Routes>
+          </CartProvider>
+        </CompareProvider>
+        <ReloadPrompt />
+      </ToastProvider>
+    </ConfirmProvider>
   );
 }

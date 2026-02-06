@@ -22,6 +22,12 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
            "(p.endDate IS NULL OR p.endDate >= CURRENT_TIMESTAMP) AND " +
            "(p.usageLimit IS NULL OR p.usedCount < p.usageLimit)")
     List<Promotion> findAllValidPromotions();
+
+    @Query("SELECT p FROM Promotion p WHERE p.isActive = true AND p.isFlashSale = true AND " +
+           "(p.startDate IS NULL OR p.startDate <= CURRENT_TIMESTAMP) AND " +
+           "(p.endDate IS NULL OR p.endDate >= CURRENT_TIMESTAMP) AND " +
+           "(p.usageLimit IS NULL OR p.usedCount < p.usageLimit)")
+    List<Promotion> findActiveFlashSales();
     
     boolean existsByCode(String code);
 }

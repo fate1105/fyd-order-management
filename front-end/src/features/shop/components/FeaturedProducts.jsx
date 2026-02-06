@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { featuredAPI, formatVND } from "@shared/utils/api.js";
+import { featuredAPI, formatVND, getAssetUrl } from "@shared/utils/api.js";
 import "../styles/shop.css";
 
 export default function FeaturedProducts({ position = 'home_featured', onProductClick, onToggleWishlist, wishlist = [] }) {
@@ -106,7 +106,7 @@ function FeaturedZoneItem({ zone, onProductClick, onToggleWishlist, wishlist }) 
                 >
                     {zone.products.map((item) => {
                         const product = item.product;
-                        const image = item.customThumbnail || product?.image || '/placeholder.jpg';
+                        const image = getAssetUrl(item.customThumbnail || product?.image || '/placeholder.jpg');
                         const liked = isInWishlist(product?.id);
 
                         return (
@@ -130,7 +130,7 @@ function FeaturedZoneItem({ zone, onProductClick, onToggleWishlist, wishlist }) 
                                 <div className="featured-info">
                                     <h3 className="featured-name">{product?.name}</h3>
                                     <p className="featured-price">{formatVND(product?.price || 0)}</p>
-                                    <button className="featured-cta">MUA NGAY</button>
+                                    <button className="featured-cta btn-shop-black btn-shop-full">MUA NGAY</button>
                                 </div>
                             </div>
                         );

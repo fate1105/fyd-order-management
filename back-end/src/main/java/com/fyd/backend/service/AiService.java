@@ -4,6 +4,8 @@ import com.fyd.backend.dto.AiAdminSummary;
 import com.fyd.backend.dto.AiChatResponse;
 import com.fyd.backend.dto.AiProductResponse;
 import com.fyd.backend.dto.AnomalyReport;
+import com.fyd.backend.entity.Customer;
+import com.fyd.backend.entity.Order;
 import com.fyd.backend.entity.Product;
 import com.fyd.backend.entity.ProductVariant;
 import com.fyd.backend.repository.*;
@@ -45,6 +47,9 @@ public class AiService {
     @Autowired
     private OrderItemRepository orderItemRepository;
 
+    @Autowired
+    private CustomerRepository customerRepository;
+
     private final WebClient webClient;
 
     public AiService() {
@@ -55,17 +60,36 @@ public class AiService {
 
     /**
      * Chat with AI for shop customers - answers questions about products
+     * Supports personalized responses when customerId is provided
      */
     public AiChatResponse chatForShop(String userMessage) {
+        return chatForShop(userMessage, null);
+    }
+
+    /**
+     * Chat with AI for shop customers with personalization
+     */
+    public AiChatResponse chatForShop(String userMessage, Long customerId) {
         try {
             // Get product context
             String productContext = buildProductContext();
             
+            // Get customer context if logged in
+            String customerContext = buildCustomerContext(customerId);
+            
             String systemPrompt = """
-                Bạn là trợ lý FYD Shop. Trả lời ngắn gọn.
+                Bạn là trợ lý FYD Shop. Trả lời ngắn gọn, thân thiện.
+                
+                %s
                 
                 SẢN PHẨM:
                 %s
+                
+                CHÍNH SÁCH CỬA HÀNG:
+                - Miễn phí ship cho đơn từ 500.000đ
+                - Thành viên Vàng/Kim Cương được miễn phí ship mọi đơn
+                - Đổi trả miễn phí trong 30 ngày
+                - Tích điểm 1%% giá trị đơn hàng
                 
                 QUY TẮC BẮT BUỘC:
                 1. Khi giới thiệu sản phẩm, PHẢI dùng CHÍNH XÁC format này: PRODUCT[ID|Tên|Giá|Ảnh]
@@ -73,13 +97,128 @@ public class AiService {
                 3. VÍ DỤ ĐÚNG: "Dạ có PRODUCT[5|Áo Polo|450000|http://localhost:8080/uploads/polo.jpg] ạ!"
                 4. KHÔNG được viết tên sản phẩm ra ngoài format PRODUCT[...]
                 5. Mỗi sản phẩm phải nằm trong PRODUCT[...]
-                """.formatted(productContext);
+                6. Nếu khách hỏi về hạng thành viên/điểm/ưu đãi, hãy trả lời dựa trên thông tin khách hàng ở trên
+                """.formatted(customerContext, productContext);
 
             String fullPrompt = systemPrompt + "\n\nKhách: " + userMessage;
             
             return callGroqAPI(fullPrompt);
         } catch (Exception e) {
             return AiChatResponse.error("Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.");
+        }
+    }
+
+    /**
+     * Build customer context for personalized AI responses
+     */
+    private String buildCustomerContext(Long customerId) {
+        if (customerId == null) {
+            return "KHÁCH HÀNG: Khách vãng lai (chưa đăng nhập)";
+        }
+        
+        try {
+            Optional<Customer> customerOpt = customerRepository.findById(customerId);
+            if (customerOpt.isEmpty()) {
+                return "KHÁCH HÀNG: Khách vãng lai (chưa đăng nhập)";
+            }
+            
+            Customer customer = customerOpt.get();
+            NumberFormat vndFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
+            
+            StringBuilder context = new StringBuilder();
+            context.append("KHÁCH HÀNG ĐANG CHAT:\n");
+            context.append("- Tên: ").append(customer.getFullName()).append("\n");
+            
+            if (customer.getTier() != null) {
+                context.append("- Hạng thành viên: ").append(customer.getTier().getName());
+                if (customer.getTier().getDiscountPercent() != null && 
+                    customer.getTier().getDiscountPercent().compareTo(BigDecimal.ZERO) > 0) {
+                    context.append(" (giảm ").append(customer.getTier().getDiscountPercent()).append("% mỗi đơn)");
+                }
+                context.append("\n");
+                if (customer.getTier().getBenefits() != null) {
+                    context.append("- Quyền lợi: ").append(customer.getTier().getBenefits()).append("\n");
+                }
+            } else {
+                context.append("- Hạng thành viên: Thành viên mới\n");
+            }
+            
+            context.append("- Điểm tích lũy: ").append(customer.getPoints() != null ? customer.getPoints() : 0).append(" điểm\n");
+            context.append("- Tổng chi tiêu: ").append(vndFormat.format(customer.getTotalSpent() != null ? customer.getTotalSpent() : BigDecimal.ZERO)).append("đ\n");
+            context.append("- Số đơn hàng: ").append(customer.getTotalOrders() != null ? customer.getTotalOrders() : 0).append(" đơn");
+            
+            // Get recent orders
+            List<Order> recentOrders = orderRepository.findByCustomerId(customerId);
+            if (recentOrders != null && !recentOrders.isEmpty()) {
+                context.append("\n- Đơn gần đây: ");
+                recentOrders.stream()
+                    .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                    .limit(3)
+                    .forEach(order -> {
+                        context.append(order.getOrderCode()).append(" (").append(order.getStatus()).append("), ");
+                    });
+            }
+            
+            return context.toString();
+        } catch (Exception e) {
+            return "KHÁCH HÀNG: Đã đăng nhập";
+        }
+    }
+
+    /**
+     * AI Size Advisor - suggests size based on height/weight
+     */
+    public AiChatResponse suggestSize(Long productId, Double heightCm, Double weightKg, String preferredFit) {
+        try {
+            Optional<Product> productOpt = productRepository.findById(productId);
+            if (productOpt.isEmpty()) {
+                return AiChatResponse.error("Không tìm thấy sản phẩm");
+            }
+            
+            Product product = productOpt.get();
+            
+            // Get available sizes
+            List<String> availableSizes = product.getVariants() != null 
+                ? product.getVariants().stream()
+                    .filter(v -> v.getStockQuantity() > 0 && v.getSize() != null)
+                    .map(v -> v.getSize().getName())
+                    .distinct()
+                    .collect(Collectors.toList())
+                : Collections.emptyList();
+            
+            if (availableSizes.isEmpty()) {
+                return AiChatResponse.error("Sản phẩm hiện không có size nào còn hàng");
+            }
+            
+            String fit = preferredFit != null ? preferredFit : "regular";
+            
+            String prompt = """
+                Bạn là chuyên gia tư vấn size quần áo. Dựa trên thông tin sau, hãy gợi ý SIZE PHÙ HỢP NHẤT:
+                
+                THÔNG TIN KHÁCH HÀNG:
+                - Chiều cao: %.0f cm
+                - Cân nặng: %.0f kg
+                - Kiểu dáng mong muốn: %s (regular = vừa vặn, slim = ôm, loose = rộng thoải mái)
+                
+                SẢN PHẨM: %s
+                DANH MỤC: %s
+                CÁC SIZE CÒN HÀNG: %s
+                
+                QUY TẮC TRẢ LỜI:
+                1. Chỉ gợi ý 1 size cụ thể từ danh sách có sẵn
+                2. Giải thích ngắn gọn lý do (1-2 câu)
+                3. Đề cập nếu size này có thể hơi rộng/chật dựa trên số đo
+                4. Format: "Size [X] sẽ phù hợp với bạn. [Lý do ngắn gọn]"
+                """.formatted(
+                    heightCm, weightKg, fit,
+                    product.getName(),
+                    product.getCategory() != null ? product.getCategory().getName() : "Thời trang",
+                    String.join(", ", availableSizes)
+                );
+            
+            return callGroqAPI(prompt);
+        } catch (Exception e) {
+            return AiChatResponse.error("Lỗi khi tư vấn size: " + e.getMessage());
         }
     }
 

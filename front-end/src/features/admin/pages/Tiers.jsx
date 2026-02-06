@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { pointsAPI, formatVND } from "@shared/utils/api.js";
+import { useToast } from "@shared/context/ToastContext";
 import "../styles/dashboard.css";
 import "../styles/pages.css";
 import "../styles/tiers.css";
+import { useTranslation } from "react-i18next";
 
 // SVG Icons
 const CloseIcon = () => (
@@ -87,54 +89,8 @@ const getTierClass = (name) => {
     return "";
 };
 
-// Generate structured benefits based on tier level
-const getTierBenefits = (tier) => {
-    const n = (tier.name || "").toLowerCase();
-    const discount = tier.discountPercent || 0;
-
-    const benefits = [];
-
-    // Primary benefit: Discount
-    if (discount > 0) {
-        benefits.push({
-            type: "discount",
-            text: `Giảm ${discount}% tất cả đơn hàng`,
-            primary: true
-        });
-    }
-
-    // Shipping benefit based on tier
-    if (n.includes("bronze")) {
-        benefits.push({ type: "shipping", text: "Miễn phí ship đơn từ 500k" });
-        benefits.push({ type: "points", text: "Dùng điểm tối đa 20% giá trị đơn" });
-    } else if (n.includes("silver")) {
-        benefits.push({ type: "shipping", text: "Miễn phí ship đơn từ 300k" });
-        benefits.push({ type: "points", text: "Dùng điểm tối đa 30% giá trị đơn" });
-        benefits.push({ type: "birthday", text: "Quà tặng sinh nhật" });
-    } else if (n.includes("gold")) {
-        benefits.push({ type: "shipping", text: "Miễn phí ship tất cả đơn hàng" });
-        benefits.push({ type: "points", text: "Dùng điểm tối đa 40% giá trị đơn" });
-        benefits.push({ type: "birthday", text: "Quà tặng sinh nhật đặc biệt" });
-        benefits.push({ type: "early", text: "Truy cập khuyến mãi sớm" });
-    } else if (n.includes("platinum")) {
-        benefits.push({ type: "shipping", text: "Miễn phí ship + giao nhanh ưu tiên" });
-        benefits.push({ type: "points", text: "Dùng điểm tối đa 50% giá trị đơn" });
-        benefits.push({ type: "birthday", text: "Quà sinh nhật VIP + voucher" });
-        benefits.push({ type: "early", text: "Truy cập khuyến mãi sớm 48h" });
-        benefits.push({ type: "support", text: "Hỗ trợ khách hàng ưu tiên" });
-    }
-
-    // Add custom benefits from database
-    if (tier.benefits && tier.benefits.trim()) {
-        benefits.push({ type: "custom", text: tier.benefits });
-    }
-
-    return benefits;
-};
-
-
-
 export default function Tiers() {
+    const { t } = useTranslation();
     const [tiers, setTiers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -147,6 +103,52 @@ export default function Tiers() {
         sortOrder: ""
     });
     const [saving, setSaving] = useState(false);
+    const { showToast } = useToast();
+
+    // Generate structured benefits based on tier level
+    const getTierBenefits = (tier) => {
+        const n = (tier.name || "").toLowerCase();
+        const discount = tier.discountPercent || 0;
+
+        const benefits = [];
+
+        // Primary benefit: Discount
+        if (discount > 0) {
+            benefits.push({
+                type: "discount",
+                text: t("tiers.benefit_discount", { percent: discount }),
+                primary: true
+            });
+        }
+
+        // Shipping benefit based on tier
+        if (n.includes("bronze")) {
+            benefits.push({ type: "shipping", text: t("tiers.benefit_ship_bronze") });
+            benefits.push({ type: "points", text: t("tiers.benefit_point_bronze") });
+        } else if (n.includes("silver")) {
+            benefits.push({ type: "shipping", text: t("tiers.benefit_ship_silver") });
+            benefits.push({ type: "points", text: t("tiers.benefit_point_silver") });
+            benefits.push({ type: "birthday", text: t("tiers.benefit_birthday") });
+        } else if (n.includes("gold")) {
+            benefits.push({ type: "shipping", text: t("tiers.benefit_ship_gold_plat") });
+            benefits.push({ type: "points", text: t("tiers.benefit_point_gold") });
+            benefits.push({ type: "birthday", text: t("tiers.benefit_birthday_special") });
+            benefits.push({ type: "early", text: t("tiers.benefit_access_early") });
+        } else if (n.includes("platinum")) {
+            benefits.push({ type: "shipping", text: t("tiers.benefit_ship_gold_plat") });
+            benefits.push({ type: "points", text: t("tiers.benefit_point_plat") });
+            benefits.push({ type: "birthday", text: t("tiers.benefit_birthday_vip") });
+            benefits.push({ type: "early", text: t("tiers.benefit_access_early_48") });
+            benefits.push({ type: "support", text: t("tiers.benefit_support_priority") });
+        }
+
+        // Add custom benefits from database
+        if (tier.benefits && tier.benefits.trim()) {
+            benefits.push({ type: "custom", text: tier.benefits });
+        }
+
+        return benefits;
+    };
 
     useEffect(() => {
         loadTiers();
@@ -201,8 +203,9 @@ export default function Tiers() {
             await pointsAPI.updateTier(editingTier.id, updatedData);
             setModalOpen(false);
             loadTiers();
+            showToast(t("common.update_success"));
         } catch (err) {
-            alert("Lỗi khi cập nhật hạng thành viên: " + err.message);
+            showToast(t("common.update_error") + ": " + err.message, "error");
         } finally {
             setSaving(false);
         }
@@ -213,7 +216,7 @@ export default function Tiers() {
             <div className="tiers-page">
                 <div className="tiers-loading">
                     <div className="tiers-spinner"></div>
-                    <div className="tiers-loading-text">Đang tải dữ liệu...</div>
+                    <div className="tiers-loading-text">{t("common.loading_data")}...</div>
                 </div>
             </div>
         );
@@ -228,9 +231,9 @@ export default function Tiers() {
                         <AwardIcon />
                     </div>
                     <div>
-                        <h1 className="tiers-header-title">Hạng Thành Viên</h1>
+                        <h1 className="tiers-header-title">{t("tiers.title")}</h1>
                         <p className="tiers-header-subtitle">
-                            Quản lý hệ thống loyalty và ưu đãi theo cấp bậc khách hàng
+                            {t("tiers.subtitle")}
                         </p>
                     </div>
                 </div>
@@ -258,18 +261,18 @@ export default function Tiers() {
                                 </div>
                                 <div className="tier-member-count">
                                     <UsersIcon />
-                                    <span>{memberCount.toLocaleString()} thành viên</span>
+                                    <span>{memberCount.toLocaleString()} {t("tiers.label_members")}</span>
                                 </div>
                             </div>
 
                             {/* Threshold Section */}
                             <div className="tier-threshold">
-                                <div className="tier-threshold-label">Điều kiện đạt hạng</div>
+                                <div className="tier-threshold-label">{t("tiers.label_threshold")}</div>
                                 <div>
                                     <span className="tier-threshold-value">
                                         {(tier.minPoints ?? 0).toLocaleString()}
                                     </span>
-                                    <span className="tier-threshold-unit">điểm tích lũy</span>
+                                    <span className="tier-threshold-unit">{t("tiers.label_points_acc")}</span>
                                 </div>
                             </div>
 
@@ -292,7 +295,7 @@ export default function Tiers() {
                             <div className="tier-card-footer">
                                 <button className="tier-edit-btn" onClick={() => openEdit(tier)}>
                                     <EditIcon />
-                                    <span>Chỉnh sửa</span>
+                                    <span>{t("common.edit")}</span>
                                 </button>
                             </div>
                         </div>
@@ -304,24 +307,24 @@ export default function Tiers() {
             <div className="tiers-rules-card">
                 <div className="tiers-rules-header">
                     <RuleIcon />
-                    <span className="tiers-rules-title">Quy tắc tích điểm</span>
+                    <span className="tiers-rules-title">{t("tiers.label_rules")}</span>
                 </div>
                 <div className="tiers-rules-list">
                     <div className="tiers-rule-item">
                         <span className="tiers-rule-bullet">✦</span>
-                        <span><strong>Tỷ lệ tích điểm:</strong> 10.000 VNĐ chi tiêu = 1 điểm tích lũy</span>
+                        <span><strong>{t("tiers.rule_acc_rate_title")}:</strong> {t("tiers.rule_acc_rate_desc")}</span>
                     </div>
                     <div className="tiers-rule-item">
                         <span className="tiers-rule-bullet">✦</span>
-                        <span><strong>Tỷ lệ đổi điểm:</strong> 1 điểm = 1.000 VNĐ giảm giá khi thanh toán</span>
+                        <span><strong>{t("tiers.rule_exchange_rate_title")}:</strong> {t("tiers.rule_exchange_rate_desc")}</span>
                     </div>
                     <div className="tiers-rule-item">
                         <span className="tiers-rule-bullet">✦</span>
-                        <span><strong>Điểm hết hạn:</strong> Điểm sẽ được reset sau 12 tháng không hoạt động</span>
+                        <span><strong>{t("tiers.rule_expiry_title")}:</strong> {t("tiers.rule_expiry_desc")}</span>
                     </div>
                     <div className="tiers-rule-item">
                         <span className="tiers-rule-bullet">✦</span>
-                        <span><strong>Nâng hạng:</strong> Tự động nâng hạng khi đạt đủ điểm yêu cầu</span>
+                        <span><strong>{t("tiers.rule_upgrade_title")}:</strong> {t("tiers.rule_upgrade_desc")}</span>
                     </div>
                 </div>
             </div>
@@ -329,12 +332,12 @@ export default function Tiers() {
             {/* Edit Modal */}
             <Modal
                 open={modalOpen}
-                title={`Chỉnh sửa hạng: ${editingTier?.name}`}
+                title={`${t("common.edit")} ${t("tiers.title").toLowerCase().replace("hạng thành viên", "hạng")}: ${editingTier?.name}`}
                 onClose={() => setModalOpen(false)}
             >
                 <div className="formGrid">
                     <label className="field">
-                        <span>Tên hạng</span>
+                        <span>{t("tiers.label_tier_name")}</span>
                         <input
                             value={form.name}
                             onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
@@ -342,7 +345,7 @@ export default function Tiers() {
                         />
                     </label>
                     <label className="field">
-                        <span>Thứ tự sắp xếp</span>
+                        <span>{t("common.order")}</span>
                         <input
                             type="number"
                             value={form.sortOrder}
@@ -350,7 +353,7 @@ export default function Tiers() {
                         />
                     </label>
                     <label className="field">
-                        <span>Điểm yêu cầu</span>
+                        <span>{t("tiers.label_points_req")}</span>
                         <input
                             type="number"
                             value={form.minPoints}
@@ -358,7 +361,7 @@ export default function Tiers() {
                         />
                     </label>
                     <label className="field">
-                        <span>Giảm giá (%)</span>
+                        <span>{t("promotions.type_percentage")} (%)</span>
                         <input
                             type="number"
                             step="0.1"
@@ -367,21 +370,21 @@ export default function Tiers() {
                         />
                     </label>
                     <label className="field full" style={{ gridColumn: 'span 2' }}>
-                        <span>Quyền lợi bổ sung</span>
+                        <span>{t("tiers.label_benefits_custom")}</span>
                         <textarea
                             value={form.benefits}
                             onChange={(e) => setForm(f => ({ ...f, benefits: e.target.value }))}
-                            placeholder="VD: Miễn phí giao hàng, Quà sinh nhật..."
+                            placeholder={t("tiers.placeholder_benefits")}
                             style={{ padding: 12, borderRadius: 8, border: "1px solid var(--admin-border)", minHeight: 100, background: "var(--glass-bg)", color: "var(--admin-text)" }}
                         />
                     </label>
                 </div>
                 <div className="modalActions">
                     <button className="admin-btn admin-btn-outline" type="button" onClick={() => setModalOpen(false)} disabled={saving}>
-                        HỦY
+                        {t("common.cancel").toUpperCase()}
                     </button>
                     <button className="admin-btn admin-btn-primary" type="button" onClick={handleSave} disabled={saving}>
-                        {saving ? "ĐANG LƯU..." : "LƯU THAY ĐỔI"}
+                        {saving ? t("common.saving").toUpperCase() : t("common.save_changes").toUpperCase()}
                     </button>
                 </div>
             </Modal>

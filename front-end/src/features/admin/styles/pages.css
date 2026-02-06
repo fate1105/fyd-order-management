@@ -771,6 +771,77 @@
 
 
 /* =====================================================
+   ADMIN ACTION BUTTONS (NEW)
+   ===================================================== */
+.drawer-actions-container {
+    margin-top: 8px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius-md);
+}
+
+.drawer-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: center;
+}
+
+.admin-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: var(--admin-radius-md);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--admin-transition);
+    border: 1px solid transparent;
+    font-family: var(--admin-font);
+    white-space: nowrap;
+    width: 100%;
+}
+
+.admin-action-btn svg {
+    flex-shrink: 0;
+}
+
+.admin-action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.print-btn {
+    background: rgba(99, 102, 241, 0.1);
+    color: #818cf8;
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.print-btn:hover:not(:disabled) {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: #6366f1;
+    color: #a5b4fc;
+    transform: translateY(-1px);
+}
+
+.shipping-btn {
+    background: var(--admin-accent-gradient);
+    color: #0a0a0f;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(var(--admin-accent-rgb), 0.2);
+    grid-column: span 2;
+}
+
+.shipping-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(var(--admin-accent-rgb), 0.3);
+    filter: brightness(1.1);
+}
+
+/* =====================================================
    HORIZONTAL RULE
    ===================================================== */
 .hr {

@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useToast } from "@shared/context/ToastContext";
 import { useNavigate } from "react-router-dom";
 import AuthShell from "../components/AuthShell.jsx";
 import api from "@shared/utils/api.js";
+import { saveSession } from "@shared/utils/authSession.js";
 
 // SVG Icons
 const EyeIcon = () => (
@@ -36,6 +38,7 @@ function makeCaptcha() {
 
 export default function Login() {
   const nav = useNavigate();
+  const { showToast } = useToast();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -72,12 +75,9 @@ export default function Login() {
     try {
       const response = await api.auth.login(username, password);
 
-      // Store token
+      // Store session
       if (response.token) {
-        sessionStorage.setItem('fyd_token', response.token);
-        if (remember) {
-          localStorage.setItem('fyd_token', response.token);
-        }
+        saveSession(response.token, response.user?.permissions);
       }
 
       nav("/admin");
@@ -168,7 +168,7 @@ export default function Login() {
             href="#"
             onClick={(e) => {
               e.preventDefault();
-              alert("Vui lòng liên hệ quản trị viên để cấp lại mật khẩu.");
+              showToast("Vui lòng liên hệ quản trị viên để cấp lại mật khẩu.", "info");
             }}
           >
             Quên mật khẩu?

@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { isLoggedIn, logout } from '@shared/utils/authSession';
-import { authAPI, formatDate } from '@shared/utils/api';
+import { authAPI, formatDate, dashboardAPI } from '@shared/utils/api';
 import Toast from '@shared/components/Toast';
 import '../styles/profile.css';
+import { useTranslation } from 'react-i18next';
 
 // SVG Icons
 const UserIcon = () => (
@@ -62,6 +63,7 @@ const EyeOffIcon = () => (
 
 // Password Modal Component
 function PasswordModal({ open, onClose, onSuccess }) {
+  const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -75,17 +77,17 @@ function PasswordModal({ open, onClose, onSuccess }) {
     setError('');
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setError('Vui lòng điền đầy đủ thông tin');
+      setError(t("profile.validate_required"));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Mật khẩu mới và xác nhận không khớp');
+      setError(t("profile.validate_match"));
       return;
     }
 
     if (newPassword.length < 6) {
-      setError('Mật khẩu mới phải có ít nhất 6 ký tự');
+      setError(t("profile.validate_length"));
       return;
     }
 
@@ -101,7 +103,7 @@ function PasswordModal({ open, onClose, onSuccess }) {
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
-      setError(err.message || 'Không thể đổi mật khẩu');
+      setError(err.message || t("profile.msg_password_error"));
     } finally {
       setLoading(false);
     }
@@ -114,7 +116,7 @@ function PasswordModal({ open, onClose, onSuccess }) {
       <div className="modal passwordModal" onMouseDown={e => e.stopPropagation()}>
         <div className="modalHead">
           <div className="modalTitle">
-            <LockIcon /> Đổi mật khẩu
+            <LockIcon /> {t("profile.modal_change_password")}
           </div>
           <button className="iconBtn" type="button" onClick={onClose}>
             <CloseIcon />
@@ -125,13 +127,13 @@ function PasswordModal({ open, onClose, onSuccess }) {
             {error && <div className="errorMessage">{error}</div>}
 
             <div className="field">
-              <label>Mật khẩu hiện tại</label>
+              <label>{t("profile.label_current_password")}</label>
               <div className="inputRow">
                 <input
                   type={showCurrent ? 'text' : 'password'}
                   value={currentPassword}
                   onChange={e => setCurrentPassword(e.target.value)}
-                  placeholder="Nhập mật khẩu hiện tại"
+                  placeholder={t("profile.placeholder_current_password")}
                   disabled={loading}
                 />
                 <button
@@ -145,13 +147,13 @@ function PasswordModal({ open, onClose, onSuccess }) {
             </div>
 
             <div className="field">
-              <label>Mật khẩu mới</label>
+              <label>{t("profile.label_new_password")}</label>
               <div className="inputRow">
                 <input
                   type={showNew ? 'text' : 'password'}
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  placeholder="Nhập mật khẩu mới"
+                  placeholder={t("profile.placeholder_new_password")}
                   disabled={loading}
                 />
                 <button
@@ -165,20 +167,20 @@ function PasswordModal({ open, onClose, onSuccess }) {
             </div>
 
             <div className="field">
-              <label>Xác nhận mật khẩu mới</label>
+              <label>{t("profile.label_confirm_password")}</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
-                placeholder="Nhập lại mật khẩu mới"
+                placeholder={t("profile.placeholder_confirm_password")}
                 disabled={loading}
               />
             </div>
           </div>
           <div className="modalActions">
-            <button type="button" className="btnGhost" onClick={onClose}>Hủy</button>
+            <button type="button" className="btnGhost" onClick={onClose}>{t("common.cancel")}</button>
             <button type="submit" className="btnPrimary" disabled={loading}>
-              {loading ? 'Đang xử lý...' : 'Cập nhật'}
+              {loading ? t("common.processing") : t("common.update")}
             </button>
           </div>
         </form>
@@ -188,8 +190,61 @@ function PasswordModal({ open, onClose, onSuccess }) {
   );
 }
 
+// Sessions Modal Component
+function SessionsModal({ open, onClose, sessions }) {
+  const { t } = useTranslation();
+  if (!open) return null;
+
+  return createPortal(
+    <div className="modalBackdrop" onMouseDown={onClose}>
+      <div className="modal sessionsModal" onMouseDown={e => e.stopPropagation()}>
+        <div className="modalHead">
+          <div className="modalTitle">
+            <ShieldIcon /> {t("profile.modal_sessions_title")}
+          </div>
+          <button className="iconBtn" type="button" onClick={onClose}>
+            <CloseIcon />
+          </button>
+        </div>
+        <div className="modalBody">
+          <p className="modalDesc">{t("profile.modal_sessions_desc")}</p>
+          <div className="sessionsList">
+            {sessions.map(session => (
+              <div key={session.id} className="sessionRow">
+                <div className="sessionIcon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                    <line x1="12" y1="18" x2="12.01" y2="18" />
+                  </svg>
+                </div>
+                <div className="sessionInfo">
+                  <div className="sessionDevice">
+                    {session.device} {session.isCurrent && <span className="currentBadge">{t("profile.session_current")}</span>}
+                  </div>
+                  <div className="sessionMeta">
+                    {session.location} • {session.ip}
+                  </div>
+                  <div className="sessionTime">
+                    {formatDate(session.time)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="modalActions">
+          <button type="button" className="btnGhost" style={{ color: 'var(--admin-error)' }}>{t("profile.btn_logout_others")}</button>
+          <button type="button" className="btnPrimary" onClick={onClose}>{t("common.close")}</button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 export default function Profile() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const fileInputRef = useRef(null);
 
   const [user, setUser] = useState(null);
@@ -204,9 +259,35 @@ export default function Profile() {
   // Password modal
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
+  // Profile data states
+  const [stats, setStats] = useState({ todayOrders: 0, todayProducts: 0, todayCustomers: 0 });
+  const [sessions, setSessions] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [showSessionsModal, setShowSessionsModal] = useState(false);
+  const [loadingExtra, setLoadingExtra] = useState(false);
+
   useEffect(() => {
     loadUserData();
+    loadExtraData();
   }, []);
+
+  const loadExtraData = async () => {
+    try {
+      setLoadingExtra(true);
+      const [statsData, sessionsData, activitiesData] = await Promise.all([
+        dashboardAPI.getProfileStats(),
+        authAPI.getSessions(),
+        authAPI.getActivities()
+      ]);
+      setStats(statsData);
+      setSessions(sessionsData);
+      setActivities(activitiesData);
+    } catch (error) {
+      console.error('Failed to load extra profile data:', error);
+    } finally {
+      setLoadingExtra(false);
+    }
+  };
 
   const loadUserData = async () => {
     if (!isLoggedIn()) {
@@ -221,7 +302,7 @@ export default function Profile() {
       setEditName(userData.fullName || userData.username || '');
     } catch (error) {
       console.error('Failed to load user:', error);
-      showToast('Không thể tải thông tin người dùng', 'error');
+      showToast(t("profile.msg_load_error"), 'error');
       // If unauthorized, redirect to login
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
         logout();
@@ -238,7 +319,7 @@ export default function Profile() {
 
   const handleSaveName = async () => {
     if (!editName.trim()) {
-      showToast('Tên không được để trống', 'error');
+      showToast(t("profile.validate_name_empty"), 'error');
       return;
     }
 
@@ -247,9 +328,9 @@ export default function Profile() {
       await authAPI.updateProfile({ fullName: editName.trim() });
       setUser(prev => ({ ...prev, fullName: editName.trim() }));
       setIsEditingName(false);
-      showToast('Cập nhật tên thành công!');
+      showToast(t("profile.msg_update_name_success"));
     } catch (error) {
-      showToast(error.message || 'Không thể cập nhật tên', 'error');
+      showToast(error.message || t("profile.msg_update_name_error"), 'error');
     } finally {
       setSavingName(false);
     }
@@ -261,12 +342,12 @@ export default function Profile() {
 
     const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      showToast('Vui lòng chọn file ảnh (jpg, png, gif, webp)', 'error');
+      showToast(t("products.validate_image_type", "Vui lòng chọn file ảnh (jpg, png, gif, webp)"), 'error');
       return;
     }
 
     // For now, just show a message - real upload would require API endpoint
-    showToast('Tính năng upload avatar đang được phát triển', 'info');
+    showToast(t("profile.msg_upload_dev"), 'info');
   };
 
   const handleLogout = () => {
@@ -279,7 +360,7 @@ export default function Profile() {
       <div className="admin-profile-page">
         <div className="profile-loading">
           <div className="loadingSpinner"></div>
-          <p>Đang tải thông tin...</p>
+          <p>{t("common.loading")}...</p>
         </div>
       </div>
     );
@@ -289,9 +370,9 @@ export default function Profile() {
     return (
       <div className="admin-profile-page">
         <div className="profile-error">
-          <p>Không thể tải thông tin người dùng</p>
+          <p>{t("profile.msg_load_error")}</p>
           <button className="btnPrimary" onClick={() => navigate('/admin/login')}>
-            Đăng nhập lại
+            {t("profile.btn_relogin")}
           </button>
         </div>
       </div>
@@ -321,7 +402,7 @@ export default function Profile() {
             )}
             <div className="profile-avatar-overlay">
               <CameraIcon />
-              <span>Đổi ảnh</span>
+              <span>{t("profile.btn_change_avatar")}</span>
             </div>
           </div>
 
@@ -330,13 +411,13 @@ export default function Profile() {
             <p className="profile-email">{user.email}</p>
             <p className="profile-role">
               <ShieldIcon />
-              {user.role === 'ADMIN' ? 'Quản trị viên' : user.role || 'Nhân viên'}
+              {user.role === 'ADMIN' ? t("staff.role_admin") : user.role || t("staff.role_staff")}
             </p>
           </div>
 
           <div className="profile-header-actions">
             <button className="btnGhost" onClick={handleLogout}>
-              Đăng xuất
+              {t("header.logout")}
             </button>
           </div>
         </div>
@@ -347,11 +428,11 @@ export default function Profile() {
         {/* Personal Info Section */}
         <div className="profile-section">
           <div className="section-header">
-            <h3><UserIcon /> Thông tin cá nhân</h3>
+            <h3><UserIcon /> {t("profile.section_personal")}</h3>
           </div>
 
           <div className="field">
-            <label>Họ và tên</label>
+            <label>{t("profile.label_fullname")}</label>
             {isEditingName ? (
               <div className="edit-field">
                 <input
@@ -370,14 +451,14 @@ export default function Profile() {
                     }}
                     disabled={savingName}
                   >
-                    Hủy
+                    {t("common.cancel")}
                   </button>
                   <button
                     className="btnPrimary"
                     onClick={handleSaveName}
                     disabled={savingName}
                   >
-                    {savingName ? 'Đang lưu...' : 'Lưu'}
+                    {savingName ? t("common.save") + '...' : t("common.save")}
                   </button>
                 </div>
               </div>
@@ -399,7 +480,7 @@ export default function Profile() {
           </div>
 
           <div className="field">
-            <label>Tên đăng nhập</label>
+            <label>{t("profile.label_username")}</label>
             <div className="field-display readonly">
               <span>{user.username || '—'}</span>
             </div>
@@ -407,7 +488,7 @@ export default function Profile() {
 
           {user.createdAt && (
             <div className="field">
-              <label>Ngày tham gia</label>
+              <label>{t("profile.label_join_date")}</label>
               <div className="field-display readonly">
                 <span>{formatDate(user.createdAt)}</span>
               </div>
@@ -418,26 +499,26 @@ export default function Profile() {
         {/* Security Section */}
         <div className="profile-section">
           <div className="section-header">
-            <h3><LockIcon /> Bảo mật</h3>
+            <h3><LockIcon /> {t("profile.section_security")}</h3>
           </div>
 
           <div className="security-item">
             <div className="security-info">
-              <h4>Mật khẩu</h4>
-              <p>Đổi mật khẩu đăng nhập của bạn</p>
+              <h4>{t("profile.label_password")}</h4>
+              <p>{t("profile.label_password_desc")}</p>
             </div>
             <button className="btnGhost" onClick={() => setShowPasswordModal(true)}>
-              Đổi mật khẩu
+              {t("profile.modal_change_password")}
             </button>
           </div>
 
           <div className="security-item">
             <div className="security-info">
-              <h4>Phiên đăng nhập</h4>
-              <p>Quản lý các thiết bị đã đăng nhập</p>
+              <h4>{t("profile.label_sessions")}</h4>
+              <p>{t("profile.label_sessions_desc")}</p>
             </div>
-            <button className="btnGhost" disabled>
-              Xem chi tiết
+            <button className="btnGhost" onClick={() => setShowSessionsModal(true)}>
+              {t("common.view_details")}
             </button>
           </div>
         </div>
@@ -449,41 +530,60 @@ export default function Profile() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
-              Hoạt động gần đây
+              {t("profile.section_activity")}
             </h3>
           </div>
 
           <div className="activity-stats">
             <div className="stat-card">
-              <div className="stat-value">—</div>
-              <div className="stat-label">Đơn xử lý hôm nay</div>
+              <div className="stat-value">{stats.todayOrders}</div>
+              <div className="stat-label">{t("profile.stat_orders")}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">—</div>
-              <div className="stat-label">Sản phẩm cập nhật</div>
+              <div className="stat-value">{stats.todayProducts}</div>
+              <div className="stat-label">{t("profile.stat_products")}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">—</div>
-              <div className="stat-label">Khách hàng mới</div>
+              <div className="stat-value">{stats.todayCustomers}</div>
+              <div className="stat-label">{t("profile.stat_customers")}</div>
             </div>
           </div>
 
           <div className="activity-log">
-            <div className="activity-item">
-              <div className="activity-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
+            {activities.length > 0 ? (
+              activities.map(activity => (
+                <div key={activity.id} className="activity-item">
+                  <div className="activity-icon">
+                    {activity.type === 'login' ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                        <polyline points="10 17 15 12 10 7" />
+                        <line x1="15" y1="12" x2="3" y2="12" />
+                      </svg>
+                    ) : activity.type === 'update_profile' ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="activity-content">
+                    <span className="activity-text">{activity.text}</span>
+                    <span className="activity-time">{formatDate(activity.time)}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="activity-empty">
+                <p>{t("profile.empty_activity")}</p>
               </div>
-              <div className="activity-content">
-                <span className="activity-text">Đăng nhập vào hệ thống</span>
-                <span className="activity-time">Vừa xong</span>
-              </div>
-            </div>
-            <div className="activity-empty">
-              <p>Hoạt động sẽ được ghi nhận tại đây</p>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -492,7 +592,14 @@ export default function Profile() {
       <PasswordModal
         open={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
-        onSuccess={() => showToast('Đổi mật khẩu thành công!')}
+        onSuccess={() => showToast(t("profile.msg_password_success"))}
+      />
+
+      {/* Sessions Modal */}
+      <SessionsModal
+        open={showSessionsModal}
+        onClose={() => setShowSessionsModal(false)}
+        sessions={sessions}
       />
 
       {/* Toast */}

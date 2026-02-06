@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
+import { getAssetUrl } from "@shared/utils/api.js";
 
 export default function HeroBanner({ products = [], onExploreClick, onProductClick }) {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const slides = products.length > 0
     ? products.map((p, index) => ({
-      image: p.customThumbnail || p.product?.image || p.image || "/placeholder.jpg",
+      image: getAssetUrl(p.customThumbnail || p.product?.image || p.image || "/placeholder.jpg"),
       title: p.product?.name || p.name || "SẢN PHẨM MỚI",
       subtitle: "BỘ SƯU TẬP 2026",
       cta: "MUA NGAY",
@@ -46,9 +47,14 @@ export default function HeroBanner({ products = [], onExploreClick, onProductCli
 
   const handleCtaClick = (slide) => {
     if (slide.id && onProductClick) {
-      // Find the original product object if possible, or create a minimal one
+      // Find the original product object if possible
       const product = products.find(p => (p.product?.id || p.id) === slide.id);
-      onProductClick(product?.product || product);
+      // Pass an object with both id and productId to ensure proper lookup
+      const productInfo = product?.product || product || { id: slide.id, productId: slide.id };
+      if (!productInfo.productId) {
+        productInfo.productId = productInfo.id || slide.id;
+      }
+      onProductClick(productInfo);
     } else if (onExploreClick) {
       onExploreClick();
     } else {
@@ -56,6 +62,7 @@ export default function HeroBanner({ products = [], onExploreClick, onProductCli
       document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
 
   return (
     <section className="hero-banner">

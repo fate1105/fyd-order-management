@@ -15,13 +15,13 @@ const CUSTOMER_REMEMBER_KEY = 'customer_remember';
 export function setCustomerSession(token, customer, remember = false) {
   // Clear any existing session first
   clearCustomerSession();
-  
+
   const storage = remember ? localStorage : sessionStorage;
-  
+
   try {
     storage.setItem(CUSTOMER_TOKEN_KEY, token);
     storage.setItem(CUSTOMER_DATA_KEY, JSON.stringify(customer));
-    
+
     // Store remember preference in localStorage to know where to look on page load
     if (remember) {
       localStorage.setItem(CUSTOMER_REMEMBER_KEY, 'true');
@@ -40,20 +40,22 @@ export function getCustomerSession() {
     // Check localStorage first (for "remember me" sessions)
     let token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
     let customerData = localStorage.getItem(CUSTOMER_DATA_KEY);
-    
+
     // If not in localStorage, check sessionStorage
-    if (!token || !customerData) {
+    if (!token) {
       token = sessionStorage.getItem(CUSTOMER_TOKEN_KEY);
+    }
+    if (!customerData) {
       customerData = sessionStorage.getItem(CUSTOMER_DATA_KEY);
     }
-    
+
     if (token && customerData) {
       return {
         token,
         customer: JSON.parse(customerData)
       };
     }
-    
+
     return null;
   } catch (error) {
     console.error('Failed to get customer session:', error);
@@ -71,7 +73,7 @@ export function clearCustomerSession() {
     localStorage.removeItem(CUSTOMER_TOKEN_KEY);
     localStorage.removeItem(CUSTOMER_DATA_KEY);
     localStorage.removeItem(CUSTOMER_REMEMBER_KEY);
-    
+
     // Clear from sessionStorage
     sessionStorage.removeItem(CUSTOMER_TOKEN_KEY);
     sessionStorage.removeItem(CUSTOMER_DATA_KEY);
@@ -97,12 +99,12 @@ export function getCustomerToken() {
   try {
     // Check localStorage first
     let token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
-    
+
     // If not in localStorage, check sessionStorage
     if (!token) {
       token = sessionStorage.getItem(CUSTOMER_TOKEN_KEY);
     }
-    
+
     return token;
   } catch (error) {
     console.error('Failed to get customer token:', error);

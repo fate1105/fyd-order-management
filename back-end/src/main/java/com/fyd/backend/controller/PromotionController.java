@@ -27,9 +27,15 @@ public class PromotionController {
     }
 
     // Get active promotions
-    @GetMapping("/active")
+    @GetMapping("/list/active")
     public ResponseEntity<List<Promotion>> getActivePromotions() {
         return ResponseEntity.ok(promotionRepository.findAllValidPromotions());
+    }
+
+    // Get active flash sales
+    @GetMapping("/list/flash-sale")
+    public ResponseEntity<List<Promotion>> getFlashSales() {
+        return ResponseEntity.ok(promotionRepository.findActiveFlashSales());
     }
 
     // Get promotion by ID
@@ -65,6 +71,7 @@ public class PromotionController {
                     existing.setStartDate(promotion.getStartDate());
                     existing.setEndDate(promotion.getEndDate());
                     existing.setIsActive(promotion.getIsActive());
+                    existing.setIsFlashSale(promotion.getIsFlashSale());
                     return ResponseEntity.ok(promotionRepository.save(existing));
                 })
                 .orElse(ResponseEntity.notFound().build());

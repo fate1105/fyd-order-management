@@ -16,6 +16,7 @@ public class CreateOrderRequest {
     private BigDecimal shippingFee;
     private List<OrderItemRequest> items;
     private String promotionCode;
+    private String customerCouponCode; // Mã coupon từ Lucky Spin
     private Integer pointsUsed;
 
     // Nested class for order items
@@ -67,6 +68,8 @@ public class CreateOrderRequest {
     public void setItems(List<OrderItemRequest> items) { this.items = items; }
     public String getPromotionCode() { return promotionCode; }
     public void setPromotionCode(String promotionCode) { this.promotionCode = promotionCode; }
+    public String getCustomerCouponCode() { return customerCouponCode; }
+    public void setCustomerCouponCode(String customerCouponCode) { this.customerCouponCode = customerCouponCode; }
     public Integer getPointsUsed() { return pointsUsed; }
     public void setPointsUsed(Integer pointsUsed) { this.pointsUsed = pointsUsed; }
 }

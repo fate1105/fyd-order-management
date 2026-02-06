@@ -1,5 +1,7 @@
 import { useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useToast } from "@shared/context/ToastContext";
+import { useConfirm } from "@shared/context/ConfirmContext";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -9,21 +11,7 @@ import { useFeaturedZone, useFeaturedZones } from "../hooks/useFeaturedZone";
 import { formatVND } from "@shared/utils/api.js";
 import ProductPicker from "../components/featured/ProductPicker";
 import ThumbnailEditor from "../components/featured/ThumbnailEditor";
-
-const POSITIONS = [
-  { value: 'home_hero', label: 'Trang chủ - Hero Slide' },
-  { value: 'home_featured', label: 'Trang chủ - Nổi bật' },
-  { value: 'home_bottom', label: 'Trang chủ - Cuối trang' },
-  { value: 'category_top', label: 'Category - Đầu trang' },
-  { value: 'category_bottom', label: 'Category - Cuối trang' }
-];
-
-const ASPECT_RATIOS = [
-  { value: '1/1', label: '1:1 (Vuông)' },
-  { value: '3/4', label: '3:4 (Dọc)' },
-  { value: '4/3', label: '4:3 (Ngang)' },
-  { value: '16/9', label: '16:9 (Rộng)' }
-];
+import { useTranslation } from "react-i18next";
 
 // Sortable product item
 function SortableProduct({ item, onRemove, onEditThumbnail }) {
@@ -64,6 +52,7 @@ function SortableProduct({ item, onRemove, onEditThumbnail }) {
 }
 
 export default function FeaturedZoneEditor() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const {
@@ -73,8 +62,25 @@ export default function FeaturedZoneEditor() {
   } = useFeaturedZone(id);
   const { zones, loading: zonesLoading } = useFeaturedZones();
 
+  const POSITIONS = [
+    { value: 'home_hero', label: t('featured.pos_home_hero') },
+    { value: 'home_featured', label: t('featured.pos_home_featured') },
+    { value: 'home_bottom', label: t('featured.pos_home_bottom') },
+    { value: 'category_top', label: t('featured.pos_cat_top') },
+    { value: 'category_bottom', label: t('featured.pos_cat_bottom') }
+  ];
+
+  const ASPECT_RATIOS = [
+    { value: '1/1', label: t('featured.ratio_1_1') },
+    { value: '3/4', label: t('featured.ratio_3_4') },
+    { value: '4/3', label: t('featured.ratio_4_3') },
+    { value: '16/9', label: t('featured.ratio_16_9') }
+  ];
+
   const [showPicker, setShowPicker] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const { showToast } = useToast();
+  const { showConfirm } = useConfirm();
 
   const loading = zoneLoading || zonesLoading;
 
@@ -96,7 +102,7 @@ export default function FeaturedZoneEditor() {
   const handleSave = async () => {
     const isPositionTaken = zones.some(z => z.position === zone.position && String(z.id) !== String(id));
     if (isPositionTaken) {
-      alert('Vị trí hiển thị này đã được sử dụng bởi một khu vực khác. Mỗi vị trí chỉ được phép có duy nhất một khu vực.');
+      showToast(t('featured.msg_position_taken'), 'warning');
       return;
     }
 
@@ -105,27 +111,29 @@ export default function FeaturedZoneEditor() {
       if (id === 'new' && saved?.id) {
         navigate(`/admin/featured/${saved.id}`, { replace: true });
       }
+      showToast(t("common.update_success"));
     } catch (error) {
-      alert('Lỗi lưu: ' + error.message);
+      showToast(t('common.update_error') + ': ' + error.message, 'error');
     }
   };
 
   const handleDeleteZone = async () => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa khu vực "${zone.name}"?`)) return;
+    if (!(await showConfirm(t("common.confirm_delete"), t("featured.delete_confirm", { name: zone.name })))) return;
     try {
       await deleteZone();
+      showToast(t("featured.msg_delete_success"));
       navigate('/admin/featured');
     } catch (error) {
-      alert('Lỗi xóa: ' + error.message);
+      showToast(t('common.error_occurred') + ': ' + error.message, 'error');
     }
   };
 
   if (loading) {
-    return <div className="card" style={{ padding: 40, textAlign: 'center' }}>Đang tải...</div>;
+    return <div className="card" style={{ padding: 40, textAlign: 'center' }}>{t("common.loading")}...</div>;
   }
 
   if (!zone) {
-    return <div className="card" style={{ padding: 40, textAlign: 'center' }}>Không tìm thấy khu vực</div>;
+    return <div className="card" style={{ padding: 40, textAlign: 'center' }}>{t("featured.empty_state")}</div>;
   }
 
   const { gridConfig } = zone;
@@ -138,27 +146,27 @@ export default function FeaturedZoneEditor() {
           {/* Header */}
           <div className="cardHead">
             <div>
-              <button className="back-btn" onClick={() => navigate('/admin/featured')}>← Quay lại</button>
-              <div className="cardTitle">{id === 'new' ? 'Tạo khu vực mới' : 'Chỉnh sửa khu vực'}</div>
+              <button className="back-btn" onClick={() => navigate('/admin/featured')}>← {t("common.back")}</button>
+              <div className="cardTitle">{id === 'new' ? t("featured.modal_add") : t("common.edit") + " " + t("featured.title").toLowerCase()}</div>
             </div>
             <div className="header-actions">
               {id !== 'new' && (
                 <button className="btnSmall danger" onClick={handleDeleteZone} disabled={saving}>
-                  Xóa khu vực
+                  {t("common.delete")}
                 </button>
               )}
               <button className="btnPrimary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Đang lưu...' : hasChanges ? 'Lưu thay đổi' : 'Đã lưu'}
+                {saving ? t("common.saving") + '...' : hasChanges ? t("common.save_changes") : t("common.saved")}
               </button>
             </div>
           </div>
 
           {/* Zone Info */}
           <div className="section">
-            <h3>Thông tin khu vực</h3>
+            <h3>{t("featured.section_info")}</h3>
             <div className="form-row">
               <label>
-                Tên khu vực
+                {t("common.name")}
                 <input
                   type="text"
                   value={zone.name}
@@ -178,7 +186,7 @@ export default function FeaturedZoneEditor() {
             </div>
             <div className="form-row">
               <label>
-                Vị trí hiển thị
+                {t("featured.col_position")}
                 <select value={zone.position} onChange={e => updateZoneInfo({ position: e.target.value })}>
                   {POSITIONS.map(p => {
                     const isTaken = zones.some(z => z.position === p.value && String(z.id) !== String(id));
@@ -188,7 +196,7 @@ export default function FeaturedZoneEditor() {
                         value={p.value}
                         disabled={isTaken}
                       >
-                        {p.label} {isTaken ? '(Đã sử dụng)' : ''}
+                        {p.label} {isTaken ? '(' + t("common.used") + ')' : ''}
                       </option>
                     );
                   })}
@@ -200,23 +208,23 @@ export default function FeaturedZoneEditor() {
                   checked={zone.isActive}
                   onChange={e => updateZoneInfo({ isActive: e.target.checked })}
                 />
-                Kích hoạt
+                {t("common.activated")}
               </label>
             </div>
           </div>
 
           {/* Grid Config */}
           <div className="section">
-            <h3>Cấu hình Grid</h3>
+            <h3>{t("featured.section_grid")}</h3>
             <div className="form-row triple">
               <label>
-                Số cột
+                {t("featured.label_columns")}
                 <select value={gridConfig.columns} onChange={e => updateGridConfig({ columns: +e.target.value })}>
-                  {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} cột</option>)}
+                  {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} {t("featured.unit_columns")}</option>)}
                 </select>
               </label>
               <label>
-                Khoảng cách
+                {t("featured.label_gap")}
                 <input
                   type="number"
                   value={gridConfig.gap}
@@ -226,7 +234,7 @@ export default function FeaturedZoneEditor() {
                 />
               </label>
               <label>
-                Tỉ lệ ảnh
+                {t("featured.label_aspect_ratio")}
                 <select value={gridConfig.aspectRatio} onChange={e => updateGridConfig({ aspectRatio: e.target.value })}>
                   {ASPECT_RATIOS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
@@ -237,7 +245,7 @@ export default function FeaturedZoneEditor() {
           {/* Products */}
           <div className="section">
             <div className="section-header">
-              <h3>Sản phẩm ({zone.products.length})</h3>
+              <h3>{t("common.products")} ({zone.products.length})</h3>
             </div>
 
             {/* Toolbar */}
@@ -247,7 +255,7 @@ export default function FeaturedZoneEditor() {
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-                Thêm SP
+                {t("featured.btn_add_product")}
               </button>
 
               <div className="toolbar-divider" />
@@ -260,12 +268,12 @@ export default function FeaturedZoneEditor() {
                   }
                 }}
                 disabled={zone.products.length < 2}
-                title="Đảo ngược thứ tự"
+                title={t("featured.tip_reverse")}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
                 </svg>
-                Đảo ngược
+                {t("featured.btn_reverse")}
               </button>
 
               <button
@@ -279,31 +287,31 @@ export default function FeaturedZoneEditor() {
                   }
                 }}
                 disabled={zone.products.length < 2}
-                title="Xoay vòng (di chuyển đầu xuống cuối)"
+                title={t("featured.tip_rotate")}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 12a9 9 0 11-4.219-7.619" />
                   <path d="M21 3v6h-6" />
                 </svg>
-                Xoay vòng
+                {t("featured.btn_rotate")}
               </button>
 
               <div className="toolbar-divider" />
 
               <button
                 className="toolbar-btn danger"
-                onClick={() => {
-                  if (zone.products.length > 0 && window.confirm('Xóa tất cả sản phẩm khỏi khu vực này?')) {
+                onClick={async () => {
+                  if (zone.products.length > 0 && (await showConfirm(t("common.confirm_delete"), t("featured.msg_clear_all")))) {
                     setProducts([]);
                   }
                 }}
                 disabled={zone.products.length === 0}
-                title="Xóa tất cả sản phẩm"
+                title={t("featured.tip_clear")}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" />
                 </svg>
-                Xóa hết
+                {t("featured.btn_clear")}
               </button>
             </div>
 
@@ -315,8 +323,8 @@ export default function FeaturedZoneEditor() {
                   <rect x="3" y="14" width="7" height="7" rx="1" />
                   <rect x="14" y="14" width="7" height="7" rx="1" />
                 </svg>
-                <p>Chưa có sản phẩm nào</p>
-                <button className="btnPrimary" onClick={() => setShowPicker(true)}>+ Thêm sản phẩm</button>
+                <p>{t("common.empty_state")}</p>
+                <button className="btnPrimary" onClick={() => setShowPicker(true)}>+ {t("featured.btn_add_product")}</button>
               </div>
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -365,7 +373,7 @@ export default function FeaturedZoneEditor() {
             ))}
           </div>
           {zone.products.length === 0 && (
-            <div className="preview-empty">Thêm sản phẩm để xem preview</div>
+            <div className="preview-empty">{t("featured.tip_preview_empty")}</div>
           )}
         </div>
       </div>

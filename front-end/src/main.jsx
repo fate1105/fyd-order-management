@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import App from "./App.jsx";
+import "./i18n";
 import "@shared/styles/global.css";
 import "@shared/styles/ui-kit.css";
 

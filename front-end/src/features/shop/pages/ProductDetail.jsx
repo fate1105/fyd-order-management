@@ -1,7 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import "../styles/fyd-shop.css";
 import "../styles/product-detail.css";
+import { useToast } from "@shared/context/ToastContext";
+import { useCart } from "@shared/context/CartContext";
+import { formatVND, getAssetUrl, flyToCart } from "@shared/index.js";
 
 // Components
 import ShopHeader from "../components/ShopHeader.jsx";
@@ -9,10 +12,16 @@ import ShopFooter from "../components/ShopFooter.jsx";
 import AiChatBubble from "../components/AiChatBubble.jsx";
 import LoginModal from "../components/LoginModal.jsx";
 import CartDrawer from "../components/CartDrawer.jsx";
+import LuckySpinModal from "../components/LuckySpinModal.jsx";
+import ProductReviews from "../components/ProductReviews.jsx";
+import ProductRecommendations from "../components/ProductRecommendations.jsx";
+import SizeAdvisorModal from "../components/SizeAdvisorModal.jsx";
+import ProductDetailSkeleton from "../components/ProductDetailSkeleton.jsx";
 
 // Utils
-import { productAPI, formatVND, fetchProducts, fetchCategories } from "@shared/utils/api.js";
+import { productAPI, fetchProducts, fetchCategories, nightMarketAPI } from "@shared/utils/api.js";
 import { getCustomerSession, logout as customerLogout } from "@shared/utils/customerSession.js";
+import { trackViewItem, trackAddToCart } from "@shared/utils/analytics.js";
 
 export default function ProductDetail() {
     const { productId } = useParams();
@@ -32,6 +41,7 @@ export default function ProductDetail() {
     const [selectedColor, setSelectedColor] = useState(null);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [quantity, setQuantity] = useState(1);
+    const [nightMarketOffer, setNightMarketOffer] = useState(null);
 
     // UI state
     const [activeTab, setActiveTab] = useState("description");
@@ -40,10 +50,25 @@ export default function ProductDetail() {
     const [isWishlisted, setIsWishlisted] = useState(false);
 
     // Cart & Customer state
-    const [cart, setCart] = useState([]);
-    const [cartOpen, setCartOpen] = useState(false);
+    // Cart Context
+    const {
+        cart,
+        cartCount,
+        cartTotal,
+        cartOpen,
+        setCartOpen,
+        addToCart,
+        updateCartQty,
+        removeFromCart
+    } = useCart();
+
+    // UI state
     const [customer, setCustomer] = useState(null);
     const [loginModalOpen, setLoginModalOpen] = useState(false);
+    const [luckySpinModalOpen, setLuckySpinModalOpen] = useState(false);
+    const [sizeAdvisorOpen, setSizeAdvisorOpen] = useState(false);
+    const { showToast } = useToast();
+    const mainImgRef = useRef(null);
 
     // Related products
     const [relatedProducts, setRelatedProducts] = useState([]);
@@ -77,6 +102,9 @@ export default function ProductDetail() {
                     setRelatedProducts(related);
                 }
 
+                // Track view_item event for GA4
+                trackViewItem(productData);
+
                 setError(null);
             } catch (err) {
                 console.error("Failed to load data:", err);
@@ -87,8 +115,22 @@ export default function ProductDetail() {
         };
 
         loadInitialData();
+
+        // Check for Knight Market offer
+        const offerId = searchParams.get('offerId');
+        const session = getCustomerSession();
+        if (offerId && session?.token) {
+            nightMarketAPI.getOffers(session.token).then(offers => {
+                const offer = offers.find(o => String(o.id) === String(offerId));
+                if (offer) {
+                    setNightMarketOffer(offer);
+                    showToast(`Đang áp dụng ưu đãi Night Market: -${offer.discountPercent}%`, "success");
+                }
+            }).catch(err => console.error("Failed to fetch NM offer:", err));
+        }
+
         window.scrollTo(0, 0);
-    }, [productId]);
+    }, [productId, searchParams]);
 
     // Load customer session
     useEffect(() => {
@@ -97,25 +139,10 @@ export default function ProductDetail() {
     }, []);
 
     // Load cart from localStorage
-    const [cartLoaded, setCartLoaded] = useState(false);
-    useEffect(() => {
-        const savedCart = localStorage.getItem("fyd-cart");
-        if (savedCart) {
-            try {
-                setCart(JSON.parse(savedCart));
-            } catch (e) {
-                console.error("Failed to parse cart:", e);
-            }
-        }
-        setCartLoaded(true);
-    }, []);
+    // Cart logic moved to context
 
     // Save cart to localStorage (only after initial load)
-    useEffect(() => {
-        if (cartLoaded) {
-            localStorage.setItem("fyd-cart", JSON.stringify(cart));
-        }
-    }, [cart, cartLoaded]);
+    // Cart logic moved to context
 
     // Check wishlist
     useEffect(() => {
@@ -175,50 +202,16 @@ export default function ProductDetail() {
     // Add to cart
     const handleAddToCart = () => {
         if (!selectedVariant) {
-            alert("Vui lòng chọn size và màu sắc");
+            showToast("Vui lòng chọn size và màu sắc", "warning");
             return;
         }
 
-        const itemId = `${product.id}-${selectedVariant.id}`;
-        const existingItem = cart.find(item => item.itemId === itemId);
-        const currentQty = existingItem ? existingItem.qty : 0;
-        const totalRequested = currentQty + quantity;
+        const discountedPrice = nightMarketOffer
+            ? (product.salePrice || product.basePrice) * (1 - nightMarketOffer.discountPercent / 100)
+            : null;
 
-        if (selectedVariant.stockQuantity <= 0) {
-            alert("Sản phẩm đã hết hàng");
-            return;
-        }
-
-        if (totalRequested > selectedVariant.stockQuantity) {
-            alert(`Không thể thêm vào giỏ. Chỉ còn ${selectedVariant.stockQuantity} sản phẩm trong kho.`);
-            return;
-        }
-
-        const primaryImage = product.images?.find(img => img.isPrimary)?.imageUrl || product.images?.[0]?.imageUrl;
-
-        setCart(prev => {
-            const existing = prev.find(item => item.itemId === itemId);
-            if (existing) {
-                return prev.map(item =>
-                    item.itemId === itemId ? { ...item, qty: item.qty + quantity } : item
-                );
-            }
-            return [...prev, {
-                itemId,
-                productId: product.id,
-                variantId: selectedVariant.id,
-                name: product.name,
-                price: product.salePrice || product.basePrice,
-                image: primaryImage,
-                size: selectedVariant.size,
-                color: selectedVariant.color,
-                variantInfo: [selectedVariant.size, selectedVariant.color].filter(Boolean).join(' / ') || null,
-                qty: quantity,
-                stock: selectedVariant.stockQuantity
-            }];
-        });
-
-        setCartOpen(true);
+        addToCart(product, selectedVariant, quantity, discountedPrice);
+        flyToCart(mainImgRef.current);
     };
 
     // Toggle wishlist
@@ -267,16 +260,13 @@ export default function ProductDetail() {
         return (
             <div className="shop-page">
                 <ShopHeader
-                    cartCount={cart.reduce((sum, item) => sum + item.qty, 0)}
+                    cartCount={cartCount}
                     onCartClick={() => setCartOpen(true)}
                     onLoginClick={() => setLoginModalOpen(true)}
                     customer={customer}
                     onLogout={handleLogout}
                 />
-                <div className="product-detail-loading">
-                    <div className="loading-spinner"></div>
-                    <p>Đang tải sản phẩm...</p>
-                </div>
+                <ProductDetailSkeleton />
             </div>
         );
     }
@@ -285,7 +275,7 @@ export default function ProductDetail() {
         return (
             <div className="shop-page">
                 <ShopHeader
-                    cartCount={cart.reduce((sum, item) => sum + item.qty, 0)}
+                    cartCount={cartCount}
                     onCartClick={() => setCartOpen(true)}
                     onLoginClick={() => setLoginModalOpen(true)}
                     customer={customer}
@@ -306,14 +296,20 @@ export default function ProductDetail() {
         product.images?.[0]?.imageUrl ||
         'https://via.placeholder.com/600x600?text=No+Image';
 
-    const price = product.salePrice || product.basePrice;
-    const hasDiscount = product.salePrice && product.salePrice < product.basePrice;
-    const discountPercent = hasDiscount ? Math.round((1 - product.salePrice / product.basePrice) * 100) : 0;
+    let price = product.salePrice || product.basePrice;
+    let hasDiscount = product.salePrice && product.salePrice < product.basePrice;
+    let discountPercent = hasDiscount ? Math.round((1 - product.salePrice / product.basePrice) * 100) : 0;
+
+    if (nightMarketOffer) {
+        price = price * (1 - nightMarketOffer.discountPercent / 100);
+        hasDiscount = true;
+        discountPercent = nightMarketOffer.discountPercent;
+    }
 
     return (
         <div className="shop-page">
             <ShopHeader
-                cartCount={cart.reduce((sum, item) => sum + item.qty, 0)}
+                cartCount={cartCount}
                 onCartClick={() => setCartOpen(true)}
                 onLoginClick={() => setLoginModalOpen(true)}
                 customer={customer}
@@ -325,6 +321,7 @@ export default function ProductDetail() {
                 onSearchChange={handleSearch}
                 wishlistCount={0} // Can be connected if needed
                 onWishlistClick={() => navigate('/shop')} // Temporary fallback
+                onLuckySpinClick={() => setLuckySpinModalOpen(true)}
             />
 
             <main className="product-detail-main">
@@ -362,6 +359,7 @@ export default function ProductDetail() {
                             onMouseMove={handleMouseMove}
                         >
                             <img
+                                ref={mainImgRef}
                                 src={currentImage}
                                 alt={product.name}
                                 style={isZoomed ? {
@@ -420,7 +418,12 @@ export default function ProductDetail() {
                                 <div className="size-selector">
                                     <div className="size-header">
                                         <label>Kích cỡ: <span className="selected-value">{uniqueSizes.find(s => s.id === selectedSize)?.name}</span></label>
-                                        <button className="size-guide-link">Hướng dẫn chọn kích cỡ</button>
+                                        <button
+                                            className="size-guide-link ai-advisor-trigger"
+                                            onClick={() => setSizeAdvisorOpen(true)}
+                                        >
+                                            📏 Tư vấn size AI
+                                        </button>
                                     </div>
                                     <div className="size-options">
                                         {uniqueSizes.map(size => {
@@ -540,6 +543,12 @@ export default function ProductDetail() {
                         >
                             VẬN CHUYỂN & ĐỔI TRẢ
                         </button>
+                        <button
+                            className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('reviews')}
+                        >
+                            ĐÁNH GIÁ
+                        </button>
                     </div>
 
                     <div className="tab-content">
@@ -582,33 +591,31 @@ export default function ProductDetail() {
                                 </ul>
                             </div>
                         )}
+
+                        {activeTab === 'reviews' && (
+                            <ProductReviews
+                                productId={productId}
+                                onLoginRequired={() => setLoginModalOpen(true)}
+                            />
+                        )}
                     </div>
                 </div>
 
-                {/* Related Products */}
-                {relatedProducts.length > 0 && (
-                    <div className="related-products-section">
-                        <h2>SẢN PHẨM LIÊN QUAN</h2>
-                        <div className="related-products-grid">
-                            {relatedProducts.map(p => {
-                                const img = p.images?.find(i => i.isPrimary)?.imageUrl || p.images?.[0]?.imageUrl;
-                                return (
-                                    <div
-                                        key={p.id}
-                                        className="related-product-card"
-                                        onClick={() => navigate(`/shop/product/${p.id}`)}
-                                    >
-                                        <div className="related-product-image">
-                                            <img src={img} alt={p.name} />
-                                        </div>
-                                        <h4>{p.name}</h4>
-                                        <p className="related-price">{formatVND(p.salePrice || p.basePrice)}</p>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
+                {/* AI Product Recommendations */}
+                <ProductRecommendations
+                    productId={productId}
+                    type="similar"
+                    title="CÓ THỂ BẠN SẼ THÍCH"
+                    limit={6}
+                />
+
+                {/* Frequently Bought Together */}
+                <ProductRecommendations
+                    productId={productId}
+                    type="bought_together"
+                    title="KHÁCH HÀNG CŨNG MUA"
+                    limit={4}
+                />
             </main>
 
             <ShopFooter />
@@ -618,26 +625,9 @@ export default function ProductDetail() {
                 open={cartOpen}
                 onClose={() => setCartOpen(false)}
                 cart={cart}
-                total={cart.reduce((sum, item) => sum + item.price * item.qty, 0)}
-                onUpdateQty={(itemId, qty) => {
-                    if (qty <= 0) {
-                        setCart(prev => prev.filter(item => item.itemId !== itemId));
-                    } else {
-                        setCart(prev => prev.map(item => {
-                            if (item.itemId === itemId) {
-                                if (item.stock !== undefined && qty > item.stock) {
-                                    alert(`Không thể tăng thêm. Chỉ còn ${item.stock} sản phẩm trong kho.`);
-                                    return item;
-                                }
-                                return { ...item, qty };
-                            }
-                            return item;
-                        }));
-                    }
-                }}
-                onRemove={(itemId) => {
-                    setCart(prev => prev.filter(item => item.itemId !== itemId));
-                }}
+                total={cartTotal}
+                onUpdateQty={updateCartQty}
+                onRemove={removeFromCart}
                 onCheckout={() => {
                     setCartOpen(false);
                     navigate('/shop/checkout');
@@ -653,7 +643,19 @@ export default function ProductDetail() {
                 }}
             />
 
+            <LuckySpinModal
+                isOpen={luckySpinModalOpen}
+                onClose={() => setLuckySpinModalOpen(false)}
+                onLoginRequired={() => setLoginModalOpen(true)}
+            />
+
             <AiChatBubble />
+
+            <SizeAdvisorModal
+                isOpen={sizeAdvisorOpen}
+                onClose={() => setSizeAdvisorOpen(false)}
+                product={product}
+            />
         </div>
     );
 }

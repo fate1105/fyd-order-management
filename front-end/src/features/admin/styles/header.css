@@ -117,6 +117,12 @@
   border-color: var(--admin-border-hover);
 }
 
+.headerBtn.iconOnly {
+  width: 42px;
+  padding: 0;
+  border-radius: var(--admin-radius-full);
+}
+
 .headerBtn.primary {
   background: var(--admin-accent-gradient);
   color: #0a0a0f;

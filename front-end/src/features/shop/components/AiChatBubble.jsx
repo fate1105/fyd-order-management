@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/ai-chat.css";
 import { aiAPI } from "@shared/utils/api.js";
+import { getCustomerData } from "@shared/utils/customerSession.js";
 
 // SVG Icons
 const BotIcon = () => (
@@ -225,7 +226,11 @@ export default function AiChatBubble() {
         setIsLoading(true);
 
         try {
-            const response = await aiAPI.shopChat(userMessage);
+            // Get customer ID for personalized responses
+            const customer = getCustomerData();
+            const customerId = customer?.id || null;
+
+            const response = await aiAPI.shopChat(userMessage, customerId);
             if (response.success) {
                 setMessages((prev) => [
                     ...prev,

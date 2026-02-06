@@ -59,4 +59,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "WHERE (o.status = 'DELIVERED' OR o.status = 'COMPLETED') AND o.created_at >= :from " +
            "GROUP BY DATE(o.created_at) ORDER BY date", nativeQuery = true)
     List<Object[]> getDailyRevenue(@Param("from") LocalDateTime from);
+    
+    // Check if customer has purchased a specific product (for verified review)
+    @Query("SELECT CASE WHEN COUNT(oi) > 0 THEN true ELSE false END FROM OrderItem oi " +
+           "JOIN oi.order o WHERE o.customer.id = :customerId " +
+           "AND oi.product.id = :productId AND (o.status = 'DELIVERED' OR o.status = 'COMPLETED')")
+    boolean existsByCustomerIdAndProductId(@Param("customerId") Long customerId, @Param("productId") Long productId);
 }

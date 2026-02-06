@@ -15,8 +15,13 @@ public class Role {
 
     private String description;
 
-    @Column(columnDefinition = "JSON")
-    private String permissions;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "role_permissions",
+        joinColumns = @JoinColumn(name = "role_id"),
+        inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+    private java.util.Set<Permission> permissions = new java.util.HashSet<>();
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -28,8 +33,8 @@ public class Role {
     public void setName(String name) { this.name = name; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-    public String getPermissions() { return permissions; }
-    public void setPermissions(String permissions) { this.permissions = permissions; }
+    public java.util.Set<Permission> getPermissions() { return permissions; }
+    public void setPermissions(java.util.Set<Permission> permissions) { this.permissions = permissions; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

@@ -10,10 +10,10 @@ const API_BASE = 'http://localhost:8080/api/customer/auth';
  */
 async function fetchCustomerAPI(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
-  
+
   // Get token from localStorage or sessionStorage
-  const token = localStorage.getItem('customerToken') || sessionStorage.getItem('customerToken');
-  
+  const token = localStorage.getItem('customer_token') || sessionStorage.getItem('customer_token');
+
   const headers = {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` }),
@@ -119,10 +119,10 @@ export const customerAuthAPI = {
    * Note: This is a client-side operation that clears stored tokens
    */
   logout: () => {
-    localStorage.removeItem('customerToken');
-    localStorage.removeItem('customerData');
-    sessionStorage.removeItem('customerToken');
-    sessionStorage.removeItem('customerData');
+    localStorage.removeItem('customer_token');
+    localStorage.removeItem('customer_data');
+    sessionStorage.removeItem('customer_token');
+    sessionStorage.removeItem('customer_data');
   },
 };
 

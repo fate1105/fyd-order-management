@@ -1,0 +1,93 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/fyd_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh&characterEncoding=UTF-8&useUnicode=true
+    username: fyd
+    password: fyd123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-init-sql: SET NAMES utf8mb4
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Ho_Chi_Minh
+
+  # Email Configuration (Gmail)
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: duytd24@gmail.com
+    password: qwnmkipavodvqtne
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        debug: false
+    default-encoding: UTF-8
+
+# App Configuration
+app:
+  name: FYD Store
+  backend-url: http://localhost:8080
+  frontend-url: http://localhost:5175
+
+# VNPay Configuration (Sandbox)
+vnpay:
+  tmn-code: 2QXUI4I4
+  hash-secret: JXWXZJQYZZYZZZZZZZZZZZZZZZZZ # Temporary dummy, will use standard sandbox one
+  api-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: http://localhost:5175/shop/payment-callback
+  ipn-url: ${app.backend-url}/api/payments/vnpay/ipn
+
+# GHTK Configuration (Sandbox)
+ghtk:
+  api-token: 1234567890abcdef # Temporary dummy
+  api-url: https://services.ghtk.vn/services/shipment/order
+
+# MoMo Configuration (Sandbox)
+momo:
+  partner-code: MOMO
+  access-key: dummy_access_key
+  secret-key: dummy_secret_key
+  api-url: https://test-payment.momo.vn/v2/gateway/api/create
+  return-url: http://localhost:5175/shop/payment-callback
+  ipn-url: ${app.backend-url}/api/payments/momo/ipn
+
+# OAuth Configuration
+# Replace with actual credentials from Google/Facebook Developer Console
+oauth:
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
+  facebook:
+    app-id: ${FACEBOOK_APP_ID:}
+    app-secret: ${FACEBOOK_APP_SECRET:}
+
+# AI Configuration (Groq)
+groq:
+  api:
+    key: ${GROQ_API_KEY:}
+    model: llama-3.3-70b-versatile
+    url: https://api.groq.com/openai/v1/chat/completions
+
+logging:
+  level:
+    com.fyd.backend: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.springframework.web: DEBUG

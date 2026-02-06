@@ -2,19 +2,12 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import "../styles/dashboard.css";
 import "../styles/pages.css";
-import api, { formatVND, ORDER_STATUS } from "@shared/utils/api.js";
+import api, { formatVND, ORDER_STATUS, reportAPI, shippingAPI } from "@shared/utils/api.js";
+import { useToast } from "@shared/context/ToastContext";
+import { useTranslation } from "react-i18next";
 
-// Define status map locally as fallback
-const STATUS_MAP = {
-  all: "Tất cả",
-  PENDING: "Chờ xử lý",
-  CONFIRMED: "Đã xác nhận",
-  SHIPPING: "Đang giao",
-  DELIVERED: "Hoàn tất",
-  COMPLETED: "Hoàn thành",
-  PENDING_CANCEL: "Chờ duyệt hủy",
-  CANCELLED: "Đã hủy",
-};
+
+// Icons
 
 // Icons
 const CloseIcon = () => (
@@ -59,26 +52,66 @@ const CalendarIcon = () => (
   </svg>
 );
 
+const RocketIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.71-2.13.71-3.04l-3.71-3.71c-.91 0-2.2 0-3.04.71z" />
+    <path d="M12 12l8.73-8.73c.39-.39 1.02-.39 1.41 0a1 1 0 0 1 0 1.41L13.41 13.41c-.39.39-1.02.39-1.41 0z" />
+    <path d="M10.12 13.88l-6.73 6.73" />
+    <path d="M12 12c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" />
+  </svg>
+);
+
+const TruckIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <rect x="1" y="3" width="15" height="13" />
+    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+    <circle cx="5.5" cy="18.5" r="2.5" />
+    <circle cx="18.5" cy="18.5" r="2.5" />
+  </svg>
+);
+
+const BoxIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+    <path d="m3.3 7 8.7 5 8.7-5" />
+    <path d="M12 22V12" />
+  </svg>
+);
+
 function Pill({ status }) {
+  const { t } = useTranslation();
   const statusConfig = {
-    DELIVERED: { cls: "ok", label: "Hoàn tất" },
-    COMPLETED: { cls: "ok", label: "Hoàn thành" },
-    SHIPPING: { cls: "ship", label: "Đang giao" },
-    PENDING: { cls: "pending", label: "Chờ xử lý" },
-    PENDING_CANCEL: { cls: "cancel", label: "Chờ duyệt hủy" },
-    CANCELLED: { cls: "cancel", label: "Đã hủy" },
+    DELIVERED: { cls: "ok", label: t("status.delivered") },
+    COMPLETED: { cls: "ok", label: t("status.completed") },
+    SHIPPING: { cls: "ship", label: t("status.shipping") },
+    PROCESSING: { cls: "ship", label: t("status.processing") },
+    PENDING: { cls: "pending", label: t("status.pending") },
+    PENDING_CANCEL: { cls: "cancel", label: t("status.pending_cancel") },
+    CANCELLED: { cls: "cancel", label: t("status.cancelled") },
   };
   const config = statusConfig[status] || { cls: "pending", label: status };
-  const label = ORDER_STATUS?.[status] || STATUS_MAP[status] || config.label;
+  const label = config.label;
   return <span className={`pill ${config.cls}`}>{label}</span>;
 }
 
-function Drawer({ open, order, onClose, onUpdateStatus }) {
+function Drawer({ open, order, onClose, onUpdateStatus, onUpdateOrderData, onPushToGHTK }) {
+  const { t } = useTranslation();
   const [isStatusOpen, setIsStatusOpen] = useState(false);
 
   if (!open || !order) return null;
 
-  const statusEntries = Object.entries(STATUS_MAP || {}).filter(([k]) => k !== 'all');
+  const STATUS_MAP = {
+    PENDING: t("status.pending"),
+    CONFIRMED: t("status.confirmed"),
+    PROCESSING: t("status.processing"),
+    SHIPPING: t("status.shipping"),
+    DELIVERED: t("status.delivered"),
+    COMPLETED: t("status.completed"),
+    PENDING_CANCEL: t("status.pending_cancel"),
+    CANCELLED: t("status.cancelled"),
+  };
+
+  const statusEntries = Object.entries(STATUS_MAP);
 
   const formatDateTime = (dateStr) => {
     if (!dateStr) return "—";
@@ -115,14 +148,14 @@ function Drawer({ open, order, onClose, onUpdateStatus }) {
         {/* Customer Card */}
         <div className="drawer-card">
           <div className="drawer-card-header">
-            <UserIcon /> Khách hàng
+            <UserIcon /> {t("orders.drawer_customer")}
           </div>
           <div className="drawer-customer-info">
             <div className="customer-avatar">
               {(order.customer?.fullName || order.shippingName || "K").charAt(0).toUpperCase()}
             </div>
             <div className="customer-details">
-              <div className="customer-name">{order.customer?.fullName || order.shippingName || "Khách lẻ"}</div>
+              <div className="customer-name">{order.customer?.fullName || order.shippingName || t("orders.drawer_guest")}</div>
               <div className="customer-contact">
                 <span><PhoneIcon /> {order.customer?.phone || order.shippingPhone || "—"}</span>
                 {order.customer?.email && <span>{order.customer.email}</span>}
@@ -134,7 +167,7 @@ function Drawer({ open, order, onClose, onUpdateStatus }) {
         {/* Shipping Card */}
         <div className="drawer-card">
           <div className="drawer-card-header">
-            <MapPinIcon /> Địa chỉ giao hàng
+            <MapPinIcon /> {t("orders.drawer_shipping_address")}
           </div>
           <div className="drawer-address">
             <div className="address-name">{order.shippingName}</div>
@@ -143,10 +176,29 @@ function Drawer({ open, order, onClose, onUpdateStatus }) {
           </div>
         </div>
 
+        {/* Shipping Tracking Card */}
+        {order.trackingNumber && (
+          <div className="drawer-card" style={{ borderLeft: '4px solid #3b82f6' }}>
+            <div className="drawer-card-header">
+              <BoxIcon /> {t("orders.drawer_shipping_info")}
+            </div>
+            <div className="drawer-tracking-info">
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ color: '#64748b' }}>{t("orders.drawer_carrier")}:</span>
+                <span style={{ fontWeight: 600 }}>{order.carrier}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>{t("orders.drawer_tracking_code")}:</span>
+                <span className="mono" style={{ fontWeight: 700, color: '#2563eb' }}>{order.trackingNumber}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Products */}
         <div className="drawer-card">
           <div className="drawer-card-header">
-            Sản phẩm ({order.items?.length || 0})
+            {t("orders.drawer_products")} ({order.items?.length || 0})
           </div>
           <div className="drawer-products">
             {order.items?.map((it, idx) => (
@@ -174,35 +226,35 @@ function Drawer({ open, order, onClose, onUpdateStatus }) {
         {/* Payment Summary */}
         <div className="drawer-card drawer-summary-card">
           <div className="drawer-card-header">
-            <CreditCardIcon /> Thanh toán
+            <CreditCardIcon /> {t("orders.drawer_payment")}
           </div>
           <div className="drawer-payment-info">
             <div className="payment-method">
               {order.paymentMethod || "COD"}
               <span className={`payment-status ${order.paymentStatus?.toLowerCase()}`}>
-                {order.paymentStatus === "PAID" ? "Đã thanh toán" : "Chưa thanh toán"}
+                {order.paymentStatus === "PAID" ? t("orders.drawer_paid") : t("orders.drawer_unpaid")}
               </span>
             </div>
           </div>
           <div className="drawer-summary">
             <div className="summary-row">
-              <span>Tạm tính</span>
+              <span>{t("orders.drawer_subtotal")}</span>
               <span>{formatVND(order.subtotal || order.totalAmount)}</span>
             </div>
             {order.shippingFee > 0 && (
               <div className="summary-row">
-                <span>Phí vận chuyển</span>
+                <span>{t("orders.drawer_shipping_fee")}</span>
                 <span>{formatVND(order.shippingFee)}</span>
               </div>
             )}
             {order.discount > 0 && (
               <div className="summary-row discount">
-                <span>Giảm giá</span>
+                <span>{t("orders.drawer_discount")}</span>
                 <span>-{formatVND(order.discount)}</span>
               </div>
             )}
             <div className="summary-row total">
-              <span>Tổng cộng</span>
+              <span>{t("orders.drawer_total")}</span>
               <span>{formatVND(order.totalAmount)}</span>
             </div>
           </div>
@@ -211,41 +263,69 @@ function Drawer({ open, order, onClose, onUpdateStatus }) {
         {/* Note */}
         {order.notes && (
           <div className="drawer-card drawer-note">
-            <div className="drawer-card-header">Ghi chú</div>
+            <div className="drawer-card-header">{t("orders.drawer_notes")}</div>
             <p>{order.notes}</p>
           </div>
         )}
 
         {/* Status Update Actions */}
-        <div className="drawer-actions">
-          <div className="drawer-section-label">Cập nhật trạng thái</div>
-          <div className="custom-select-wrapper">
-            <div
-              className={`custom-select-trigger ${isStatusOpen ? 'active' : ''}`}
-              onClick={() => setIsStatusOpen(!isStatusOpen)}
+        <div className="drawer-actions-container">
+          <div className="drawer-section-label">{t("orders.drawer_handle_order")}</div>
+
+          <div className="drawer-actions-grid">
+            <div className="custom-select-wrapper">
+              <div
+                className={`custom-select-trigger ${isStatusOpen ? 'active' : ''}`}
+                onClick={() => setIsStatusOpen(!isStatusOpen)}
+              >
+                <span>{STATUS_MAP[order.status] || order.status}</span>
+                <span className="custom-select-arrow">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </span>
+              </div>
+              <div className={`custom-options ${isStatusOpen ? 'show' : ''}`}>
+                {statusEntries.map(([k, v]) => (
+                  <div
+                    key={k}
+                    className={`custom-option ${order.status === k ? 'selected' : ''}`}
+                    onClick={() => {
+                      if (window.confirm(t("orders.status_confirm_change", { status: v }))) {
+                        onUpdateStatus(order.id, k);
+                      }
+                      setIsStatusOpen(false);
+                    }}
+                  >
+                    {v}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button
+              className="admin-action-btn print-btn"
+              onClick={() => reportAPI.printInvoice(order.id)}
             >
-              <span>{STATUS_MAP[order.status] || order.status}</span>
-              <span className="custom-select-arrow">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </span>
-            </div>
-            <div className={`custom-options ${isStatusOpen ? 'show' : ''}`}>
-              {statusEntries.map(([k, v]) => (
-                <div
-                  key={k}
-                  className={`custom-option ${order.status === k ? 'selected' : ''}`}
-                  onClick={() => {
-                    onUpdateStatus(order.id, k);
-                    setIsStatusOpen(false);
-                  }}
-                >
-                  {v}
-                </div>
-              ))}
-            </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6v-8z" />
+              </svg>
+              {t("orders.drawer_print_invoice")}
+            </button>
           </div>
+
+          {!order.trackingNumber && ['CONFIRMED', 'PROCESSING'].includes(order.status) && (
+            <>
+              <div className="drawer-section-label" style={{ marginTop: 20 }}>{t("orders.drawer_shipping_section")}</div>
+              <button
+                className="admin-action-btn shipping-btn"
+                onClick={(e) => onPushToGHTK(order.id, e.currentTarget)}
+              >
+                <TruckIcon />
+                {t("orders.drawer_push_ghtk")}
+              </button>
+            </>
+          )}
         </div>
       </aside>
     </>
@@ -255,22 +335,58 @@ function Drawer({ open, order, onClose, onUpdateStatus }) {
 }
 
 export default function Orders() {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
+
+  const statusConfig = {
+    all: t("status.all"),
+    PENDING: t("status.pending"),
+    CONFIRMED: t("status.confirmed"),
+    PROCESSING: t("status.processing"),
+    SHIPPING: t("status.shipping"),
+    DELIVERED: t("status.delivered"),
+    COMPLETED: t("status.completed"),
+    PENDING_CANCEL: t("status.pending_cancel"),
+    CANCELLED: t("status.cancelled"),
+  };
+
+  const statusEntries = Object.entries(statusConfig);
+
   const [q, setQ] = useState("");
   const [chip, setChip] = useState("all");
+  const [activeTab, setActiveTab] = useState("normal"); // "normal" or "cancel_requests"
   const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ all: 0 });
+  const { showToast } = useToast();
 
   useEffect(() => {
     async function loadOrders() {
       setLoading(true);
       try {
         const params = { q };
-        if (chip !== "all") params.status = chip;
+        if (activeTab === "cancel_requests") {
+          // Cancellation tab: Only shows PENDING_CANCEL and CANCELLED
+          if (chip !== "all" && (chip === "PENDING_CANCEL" || chip === "CANCELLED")) {
+            params.status = chip;
+          }
+        } else if (chip !== "all") {
+          params.status = chip;
+        }
+
         const res = await api.order.getAll(params);
-        // API returns { orders: [], totalItems, statusCounts, ... }
-        const list = res.orders || res.content || res || [];
+        let list = res.orders || res.content || res || [];
+
+        // Final distribution filter
+        if (activeTab === "cancel_requests") {
+          list = list.filter(o => o.status === "PENDING_CANCEL" || o.status === "CANCELLED");
+          if (chip !== "all") {
+            list = list.filter(o => o.status === chip);
+          }
+        } else {
+          list = list.filter(o => o.status !== "PENDING_CANCEL" && o.status !== "CANCELLED");
+        }
+
         setOrders(Array.isArray(list) ? list : []);
         setStats(prev => ({ ...prev, all: res.totalItems || res.totalElements || list.length }));
       } catch (error) {
@@ -281,7 +397,7 @@ export default function Orders() {
       }
     }
     loadOrders();
-  }, [q, chip]);
+  }, [q, chip, activeTab]);
 
   const selected = orders.find((o) => o.id === selectedId) || null;
 
@@ -289,52 +405,150 @@ export default function Orders() {
     try {
       await api.order.updateStatus(id, newStatus);
       setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
+      showToast(t("orders.update_status_success"));
     } catch (error) {
-      alert("Lỗi cập nhật trạng thái: " + error.message);
+      showToast(t("common.update_error") + ": " + error.message, "error");
     }
   };
 
-  // Ensure STATUS_MAP is always valid
-  const statusEntries = Object.entries(STATUS_MAP || {});
+  const updateOrderData = (id, data) => {
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...data } : o)));
+  };
+
+  const handlePushToGHTK = async (orderId, btnElement) => {
+    if (!window.confirm(t("orders.push_ghtk_confirm"))) return;
+
+    if (btnElement) {
+      btnElement.disabled = true;
+      btnElement.dataset.oldText = btnElement.innerText;
+      btnElement.innerText = "...";
+    }
+
+    try {
+      const res = await shippingAPI.pushToGHTK(orderId);
+      showToast(t("orders.push_ghtk_success"));
+      updateOrderData(orderId, {
+        trackingNumber: res.order.label,
+        carrier: 'GHTK',
+        status: 'SHIPPING'
+      });
+    } catch (error) {
+      const errorMsg = error.details?.message || error.details?.error_body || error.message;
+      showToast("Lỗi GHTK: " + errorMsg, "error");
+      if (btnElement) {
+        btnElement.disabled = false;
+        btnElement.innerText = btnElement.dataset.oldText;
+      }
+    }
+  };
 
   return (
     <div className="card">
       <div className="cardHead">
         <div>
-          <div className="cardTitle">Đơn hàng</div>
-          <div className="cardSub">Quản lý và xử lý đơn hàng thời gian thực</div>
+          <div className="cardTitle">{t("orders.title")}</div>
+          <div className="cardSub">{t("orders.subtitle")}</div>
         </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
           <input
             className="miniInput"
-            placeholder="Tìm mã / khách / SĐT…"
+            placeholder={t("orders.search_placeholder")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
+          <button
+            className="btnGhost"
+            type="button"
+            onClick={async () => {
+              try {
+                await reportAPI.exportOrders({ status: chip !== 'all' ? chip : '' });
+                showToast(t("orders.export_success"));
+              } catch (e) {
+                showToast(t("orders.export_error") + e.message, "error");
+              }
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            {t("orders.export_excel")}
+          </button>
         </div>
       </div>
 
-      <div className="chips" style={{ marginBottom: 12 }}>
-        {statusEntries.map(([k, v]) => (
-          <button key={k} className={`chip ${chip === k ? "on" : ""}`} onClick={() => setChip(k)} type="button">
-            {v}
-          </button>
-        ))}
+      <div className="tabs-container" style={{ display: 'flex', gap: '30px', borderBottom: '1px solid var(--admin-border)', marginBottom: '20px' }}>
+        <div
+          className={`tab-item ${activeTab === 'normal' ? 'active' : ''}`}
+          style={{
+            padding: '10px 0',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'normal' ? '700' : '500',
+            color: activeTab === 'normal' ? 'var(--admin-primary)' : 'var(--admin-text-muted)',
+            borderBottom: activeTab === 'normal' ? '2px solid var(--admin-primary)' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+          onClick={() => { setActiveTab('normal'); setChip('all'); }}
+        >
+          <BoxIcon /> {t("orders.tab_orders")}
+        </div>
+        <div
+          className={`tab-item ${activeTab === 'cancel_requests' ? 'active' : ''}`}
+          style={{
+            padding: '10px 0',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'cancel_requests' ? '700' : '500',
+            color: activeTab === 'cancel_requests' ? 'var(--admin-danger)' : 'var(--admin-text-muted)',
+            borderBottom: activeTab === 'cancel_requests' ? '2px solid var(--admin-danger)' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+          onClick={() => { setActiveTab('cancel_requests'); setChip('PENDING_CANCEL'); }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M12 9v4M12 17h.01M4.93 4.93l14.14 14.14M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+          </svg>
+          {t("orders.tab_cancel_requests")}
+        </div>
       </div>
+
+      {activeTab === 'normal' ? (
+        <div className="chips" style={{ marginBottom: 16 }}>
+          {statusEntries
+            .filter(([k]) => k !== 'PENDING_CANCEL' && k !== 'CANCELLED')
+            .map(([k, v]) => (
+              <button key={k} className={`chip ${chip === k ? "on" : ""}`} onClick={() => setChip(k)} type="button">
+                {k === 'all' ? t("status.all") : statusConfig[k]}
+              </button>
+            ))}
+        </div>
+      ) : (
+        <div className="chips" style={{ marginBottom: 16 }}>
+          {['all', 'PENDING_CANCEL', 'CANCELLED'].map(k => (
+            <button key={k} className={`chip ${chip === k ? "on" : ""}`} onClick={() => setChip(k)} type="button">
+              {k === 'all' ? t("orders.all_requests") : statusConfig[k]}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ padding: '40px', textAlign: 'center', color: 'var(--admin-text-muted)' }}>
-          <div style={{ fontWeight: '700' }}>ĐANG TẢI...</div>
+          <div style={{ fontWeight: '700' }}>{t("common.loading")}</div>
         </div>
       ) : (
         <div className="table">
           <div className="tr th">
-            <div>Mã</div>
-            <div>Khách</div>
-            <div>Tổng</div>
-            <div>Trạng thái</div>
-            <div>Hành động</div>
+            <div>{t("orders.col_code")}</div>
+            <div>{t("orders.col_customer")}</div>
+            <div>{t("orders.col_total")}</div>
+            <div>{t("orders.col_status")}</div>
+            <div>{t("orders.col_action")}</div>
           </div>
 
           {orders.map((o) => (
@@ -347,11 +561,23 @@ export default function Orders() {
               <div className="mono" style={{ fontWeight: '700' }}>{formatVND(o.totalAmount)}</div>
               <div><Pill status={o.status} /></div>
               <div className="rowActions">
-                <button className="linkBtn" type="button" onClick={() => setSelectedId(o.id)}>Xem chi tiết</button>
+                {!o.trackingNumber && (o.status === 'CONFIRMED' || o.status === 'PROCESSING') && (
+                  <button
+                    className="linkBtn ghtk-push-btn"
+                    style={{ color: '#059669', marginRight: 10, fontWeight: 700 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePushToGHTK(o.id, e.currentTarget);
+                    }}
+                  >
+                    <RocketIcon /> {t("orders.push_ghtk")}
+                  </button>
+                )}
+                <button className="linkBtn" type="button" onClick={() => setSelectedId(o.id)}>{t("orders.view_details")}</button>
               </div>
             </div>
           ))}
-          {orders.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--admin-text-muted)' }}>Không tìm thấy đơn hàng nào.</div>}
+          {orders.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--admin-text-muted)' }}>{t("orders.no_orders_found")}</div>}
         </div>
       )}
 
@@ -360,6 +586,8 @@ export default function Orders() {
         order={selected}
         onClose={() => setSelectedId(null)}
         onUpdateStatus={updateStatus}
+        onUpdateOrderData={updateOrderData}
+        onPushToGHTK={handlePushToGHTK}
       />
     </div>
   );

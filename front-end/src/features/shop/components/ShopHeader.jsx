@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useCompare } from "@shared/context/CompareContext";
+import { useTranslation } from "react-i18next";
+import { trackSearch } from "@shared/utils/analytics.js";
 
 // User Dropdown Menu for logged-in customers
 function UserDropdown({ customer, onLogout, isOpen, onToggle }) {
@@ -179,8 +182,12 @@ export default function ShopHeader({
   onLoginClick = () => { },
   onLogoutClick = () => { },
   wishlistCount = 0,
-  onWishlistClick = () => { }
+  onWishlistClick = () => { },
+  onLuckySpinClick = () => { },
+  onFlashSaleClick = () => { }
 }) {
+  const { compareCount, openCompareModal } = useCompare();
+  const { t } = useTranslation();
   const [openDropdown, setOpenDropdown] = useState(null);
   const navigate = useNavigate();
 
@@ -260,7 +267,10 @@ export default function ShopHeader({
               onToggle={(open) => setOpenDropdown(open ? 'balo' : null)}
             />
           )}
+          <button type="button" className="adidas-nav-item flash-sale-nav" onClick={onFlashSaleClick}>FLASH SALE</button>
+          <button type="button" className="adidas-nav-item night-market-nav" onClick={() => navigate('/shop/night-market')} style={{ color: '#06b6d4', fontWeight: '900' }}>NIGHT MARKET</button>
           <button type="button" className="adidas-nav-item sale" onClick={handleShowSaleClick}>SALE</button>
+          <button type="button" className="adidas-nav-item lucky-spin" onClick={onLuckySpinClick}>VÒNG QUAY</button>
         </nav>
         <div className="adidas-header-right">
           <div className="adidas-search">
@@ -269,12 +279,23 @@ export default function ShopHeader({
               placeholder="Tìm kiếm"
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchValue.trim()) {
+                  trackSearch(searchValue);
+                }
+              }}
             />
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.35-4.35" />
             </svg>
           </div>
+          <button className="adidas-icon-btn" title={t("shop.compare_btn_title")} onClick={openCompareModal}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+            </svg>
+            {compareCount > 0 && <span className="cart-count">{compareCount}</span>}
+          </button>
           <button className="adidas-icon-btn" title="Yêu thích" onClick={onWishlistClick}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />

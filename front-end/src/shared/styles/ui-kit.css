@@ -157,3 +157,60 @@
   outline:none;
 }
 .modalActions{ display:flex; justify-content:flex-end; gap: 10px; margin-top: 14px; }
+
+/* PWA Toast Styles */
+.pwa-toast-container {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  margin: 16px;
+  padding: 16px;
+  z-index: 10000;
+}
+
+.pwa-toast {
+  padding: 20px;
+  border: 1px solid var(--neon-cyan);
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 320px;
+  animation: slide-up 0.3s ease-out;
+}
+
+.pwa-message {
+  font-size: 0.95rem;
+  color: white;
+  line-height: 1.4;
+}
+
+.pwa-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.neon-btn-small {
+  background: var(--neon-cyan);
+  color: black;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.neon-btn-outline-small {
+  background: transparent;
+  color: var(--neon-cyan);
+  border: 1px solid var(--neon-cyan);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}

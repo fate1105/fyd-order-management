@@ -7,8 +7,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Collections;
+import java.util.stream.Collectors;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import com.fyd.backend.service.JwtService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -18,14 +25,25 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtService jwtService;
+
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
-        // Simple login (no password hashing for demo)
         return userRepository.findByUsername(request.getUsername())
             .or(() -> userRepository.findByEmail(request.getUsername()))
             .map(user -> {
-                // In production, verify password hash
-                // For demo, just check if user exists and is active
+                // Verify password hash
+                if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+                    Map<String, Object> error = new HashMap<>();
+                    error.put("success", false);
+                    error.put("message", "Mật khẩu không chính xác");
+                    return ResponseEntity.badRequest().body(error);
+                }
+
                 if (!"ACTIVE".equals(user.getStatus())) {
                     Map<String, Object> error = new HashMap<>();
                     error.put("success", false);
@@ -37,10 +55,12 @@ public class AuthController {
                 user.setLastLoginAt(LocalDateTime.now());
                 userRepository.save(user);
                 
+                String token = jwtService.generateToken(user);
+                
                 Map<String, Object> response = new HashMap<>();
                 response.put("success", true);
                 response.put("user", userToMap(user));
-                response.put("token", "demo-token-" + user.getId()); // Mock token
+                response.put("token", token); 
                 return ResponseEntity.ok(response);
             })
             .orElseGet(() -> {
@@ -53,18 +73,22 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<Map<String, Object>> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String token) {
-        // Mock: extract user from token
-        if (token == null || !token.startsWith("Bearer demo-token-")) {
+        if (token == null || !token.startsWith("Bearer ")) {
             return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
         }
         
+        String jwt = token.substring(7);
+        if (!jwtService.validateToken(jwt)) {
+            return ResponseEntity.status(401).body(Map.of("message", "Invalid token"));
+        }
+
         try {
-            Long userId = Long.parseLong(token.replace("Bearer demo-token-", ""));
+            Long userId = jwtService.extractCustomerId(jwt); // Reuse extractCustomerId as it just parses the subject string to Long
             return userRepository.findById(userId)
                 .map(user -> ResponseEntity.ok(userToMap(user)))
                 .orElse(ResponseEntity.status(401).body(Map.of("message", "User not found")));
-        } catch (NumberFormatException e) {
-            return ResponseEntity.status(401).body(Map.of("message", "Invalid token"));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of("message", "Token processing error"));
         }
     }
 
@@ -73,12 +97,17 @@ public class AuthController {
             @RequestHeader(value = "Authorization", required = false) String token,
             @RequestBody UpdateProfileRequest request) {
         
-        if (token == null || !token.startsWith("Bearer demo-token-")) {
+        if (token == null || !token.startsWith("Bearer ")) {
             return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
         }
         
+        String jwt = token.substring(7);
+        if (!jwtService.validateToken(jwt)) {
+            return ResponseEntity.status(401).body(Map.of("message", "Invalid token"));
+        }
+
         try {
-            Long userId = Long.parseLong(token.replace("Bearer demo-token-", ""));
+            Long userId = jwtService.extractCustomerId(jwt);
             return userRepository.findById(userId)
                 .map(user -> {
                     if (request.getFullName() != null) {
@@ -104,6 +133,61 @@ public class AuthController {
         }
     }
 
+    @GetMapping("/sessions")
+    public ResponseEntity<List<Map<String, Object>>> getSessions() {
+        List<Map<String, Object>> sessions = new ArrayList<>();
+        
+        Map<String, Object> s1 = new HashMap<>();
+        s1.put("id", 1);
+        s1.put("device", "Windows PC - Chrome");
+        s1.put("location", "Hà Nội, VN");
+        s1.put("ip", "1.52.221.141");
+        s1.put("time", LocalDateTime.now().minusMinutes(30).toString());
+        s1.put("isCurrent", true);
+        
+        Map<String, Object> s2 = new HashMap<>();
+        s2.put("id", 2);
+        s2.put("device", "iPhone 15 - iOS App");
+        s2.put("location", "Hồ Chí Minh, VN");
+        s2.put("ip", "27.79.141.22");
+        s2.put("time", LocalDateTime.now().minusDays(1).toString());
+        s2.put("isCurrent", false);
+        
+        sessions.add(s1);
+        sessions.add(s2);
+        
+        return ResponseEntity.ok(sessions);
+    }
+
+    @GetMapping("/activities")
+    public ResponseEntity<List<Map<String, Object>>> getActivities() {
+        List<Map<String, Object>> activities = new ArrayList<>();
+        
+        Map<String, Object> a1 = new HashMap<>();
+        a1.put("id", 1);
+        a1.put("type", "login");
+        a1.put("text", "Đăng nhập vào hệ thống");
+        a1.put("time", LocalDateTime.now().minusMinutes(35).toString());
+        
+        Map<String, Object> a2 = new HashMap<>();
+        a2.put("id", 2);
+        a2.put("type", "update_profile");
+        a2.put("text", "Cập nhật ảnh đại diện");
+        a2.put("time", LocalDateTime.now().minusHours(2).toString());
+        
+        Map<String, Object> a3 = new HashMap<>();
+        a3.put("id", 3);
+        a3.put("type", "order_process");
+        a3.put("text", "Xác nhận đơn hàng #FYD-20260125-839");
+        a3.put("time", LocalDateTime.now().minusHours(3).toString());
+        
+        activities.add(a1);
+        activities.add(a2);
+        activities.add(a3);
+        
+        return ResponseEntity.ok(activities);
+    }
+
     private Map<String, Object> userToMap(User user) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", user.getId());
@@ -113,6 +197,17 @@ public class AuthController {
         map.put("phone", user.getPhone());
         map.put("avatar", user.getAvatarUrl());
         map.put("role", user.getRole() != null ? user.getRole().getName() : null);
+        
+        // Add permissions to response
+        if (user.getRole() != null && user.getRole().getPermissions() != null) {
+            List<String> perms = user.getRole().getPermissions().stream()
+                .map(p -> p.getName())
+                .collect(Collectors.toList());
+            map.put("permissions", perms);
+        } else {
+            map.put("permissions", Collections.emptyList());
+        }
+
         map.put("status", user.getStatus());
         map.put("createdAt", user.getCreatedAt());
         return map;

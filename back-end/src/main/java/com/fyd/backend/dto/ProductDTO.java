@@ -22,6 +22,7 @@ public class ProductDTO {
     private String status;
     private Boolean isFeatured;
     private Boolean isNew;
+    private Boolean isFlashSale;
     private Integer viewCount;
     private Integer soldCount;
     private Integer totalStock;
@@ -50,6 +51,7 @@ public class ProductDTO {
         dto.setStatus(p.getStatus());
         dto.setIsFeatured(p.getIsFeatured());
         dto.setIsNew(p.getIsNew());
+        dto.setIsFlashSale(p.getIsFlashSale());
         dto.setViewCount(p.getViewCount());
         dto.setSoldCount(p.getSoldCount());
         
@@ -109,6 +111,8 @@ public class ProductDTO {
     public void setIsFeatured(Boolean isFeatured) { this.isFeatured = isFeatured; }
     public Boolean getIsNew() { return isNew; }
     public void setIsNew(Boolean isNew) { this.isNew = isNew; }
+    public Boolean getIsFlashSale() { return isFlashSale; }
+    public void setIsFlashSale(Boolean isFlashSale) { this.isFlashSale = isFlashSale; }
     public Integer getViewCount() { return viewCount; }
     public void setViewCount(Integer viewCount) { this.viewCount = viewCount; }
     public Integer getSoldCount() { return soldCount; }

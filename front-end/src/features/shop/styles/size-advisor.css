@@ -1,0 +1,215 @@
+/* Size Advisor Modal Styles */
+
+.size-advisor-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 0.3s ease;
+}
+
+.size-advisor-modal {
+    background: white;
+    width: 90%;
+    max-width: 450px;
+    border-radius: 20px;
+    padding: 30px;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.size-advisor-modal .close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.advisor-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.advisor-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+}
+
+.advisor-header h3 {
+    margin: 0 0 8px 0;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.advisor-header p {
+    color: #666;
+    font-size: 14px;
+    margin: 0;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #eee;
+    border-radius: 10px;
+    font-size: 15px;
+    transition: all 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #000;
+}
+
+.fit-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.fit-options button {
+    padding: 10px;
+    border: 2px solid #eee;
+    background: white;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.fit-options button.active {
+    background: #000;
+    color: white;
+    border-color: #000;
+}
+
+.advisor-submit {
+    width: 100%;
+    padding: 15px;
+    background: #000;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 24px;
+    transition: all 0.2s;
+}
+
+.advisor-submit:hover:not(:disabled) {
+    background: #333;
+    transform: translateY(-2px);
+}
+
+.advisor-submit:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.advisor-error {
+    color: #ff4b2b;
+    font-size: 13px;
+    margin-top: 15px;
+    text-align: center;
+}
+
+/* Result Styles */
+.advisor-result {
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 15px;
+    border: 2px dashed #000;
+}
+
+.result-badge {
+    display: inline-block;
+    background: #000;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.result-text {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #1a1a1a;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+.advisor-reset {
+    background: none;
+    border: 1px solid #ddd;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #666;
+}
+
+.advisor-reset:hover {
+    background: #eee;
+}
+
+.advisor-footer {
+    margin-top: 20px;
+    font-size: 11px;
+    color: #999;
+    text-align: center;
+}

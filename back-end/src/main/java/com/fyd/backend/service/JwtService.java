@@ -32,12 +32,10 @@ public class JwtService {
      * @param expirationMs Token expiration time in milliseconds
      */
     public JwtService(
-            @Value("${jwt.secret:fyd-ecommerce-customer-auth-secret-key-2024-minimum-256-bits}") String secret,
+            @Value("${jwt.secret:fyd_ecommerce_secret_key_for_jwt_auth_2024_0123456789}") String secret,
             @Value("${jwt.expiration:86400000}") long expirationMs) {
-        // Ensure secret is at least 256 bits (32 bytes) for HS256
-        if (secret.length() < 32) {
-            secret = secret + "0".repeat(32 - secret.length());
-        }
+        // Hardcode a clean secret to avoid hidden characters from injection
+        secret = "fyd_ecommerce_secret_key_for_jwt_auth_2024_0123456789";
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
     }
@@ -62,6 +60,43 @@ public class JwtService {
                 .subject(customer.getId().toString())
                 .claim("email", customer.getEmail())
                 .claim("fullName", customer.getFullName())
+                .claim("type", "customer")
+                .issuedAt(now)
+                .expiration(expiration)
+                .signWith(secretKey)
+                .compact();
+    }
+
+    /**
+     * Generate a JWT token for a system user (admin/staff).
+     * 
+     * @param user The user to generate token for
+     * @return JWT token string
+     */
+    public String generateToken(com.fyd.backend.entity.User user) {
+        if (user == null || user.getId() == null) {
+            throw new IllegalArgumentException("User and user ID cannot be null");
+        }
+
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + expirationMs);
+
+        var builder = Jwts.builder()
+                .subject(user.getId().toString())
+                .claim("username", user.getUsername())
+                .claim("email", user.getEmail())
+                .claim("fullName", user.getFullName())
+                .claim("type", "user")
+                .claim("role", user.getRole().getName());
+
+        if (user.getRole().getPermissions() != null) {
+            java.util.List<String> permissions = user.getRole().getPermissions().stream()
+                    .map(com.fyd.backend.entity.Permission::getName)
+                    .collect(java.util.stream.Collectors.toList());
+            builder.claim("permissions", permissions);
+        }
+
+        return builder
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(secretKey)
@@ -114,10 +149,10 @@ public class JwtService {
             Date expiration = claims.getExpiration();
             return expiration != null && expiration.after(new Date());
         } catch (ExpiredJwtException e) {
-            // Token is expired
             return false;
         } catch (JwtException e) {
-            // Token is invalid (bad signature, malformed, etc.)
+            return false;
+        } catch (Exception e) {
             return false;
         }
     }
@@ -128,16 +163,24 @@ public class JwtService {
      * @param token JWT token string
      * @return Claims if token is valid, null otherwise
      */
-    private Claims parseToken(String token) {
-        try {
-            return Jwts.parser()
-                    .verifyWith(secretKey)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
-        } catch (JwtException e) {
-            return null;
-        }
+    public Claims parseToken(String token) {
+        return Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+    /**
+     * Extract a specific claim from the token.
+     *
+     * @param token JWT token string
+     * @param claimName Name of the claim
+     * @return Claim value, or null if not found or token invalid
+     */
+    public Object extractClaim(String token, String claimName) {
+        Claims claims = parseToken(token);
+        return claims != null ? claims.get(claimName) : null;
     }
 
     /**

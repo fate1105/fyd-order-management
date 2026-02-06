@@ -1,4 +1,5 @@
 import { formatVND } from "@shared/utils/api.js";
+import { trackBeginCheckout } from "@shared/utils/analytics.js";
 
 export default function CartDrawer({ open, cart, total, onClose, onUpdateQty, onRemove, onCheckout }) {
   if (!open) return null;
@@ -35,20 +36,22 @@ export default function CartDrawer({ open, cart, total, onClose, onUpdateQty, on
                   )}
                 </div>
                 <div className="cart-item-details">
-                  <h4 className="cart-item-name">{item.name}</h4>
+                  <h4 className="cart-item-name">{item.name || 'Sản phẩm'}</h4>
                   {item.variantInfo && <p className="cart-item-variant">{item.variantInfo}</p>}
-                  <p className="cart-item-price">{formatVND(item.price)}</p>
-                  <div className="cart-item-qty">
-                    <button className="qty-btn" onClick={() => onUpdateQty(item.itemId, item.qty - 1)}>−</button>
-                    <span className="qty-value">{item.qty}</span>
-                    <button
-                      className={`qty-btn ${item.stock !== undefined && item.qty >= item.stock ? 'disabled' : ''}`}
-                      onClick={() => onUpdateQty(item.itemId, item.qty + 1)}
-                      disabled={item.stock !== undefined && item.qty >= item.stock}
-                      title={item.stock !== undefined && item.qty >= item.stock ? `Chỉ còn ${item.stock} sản phẩm` : ""}
-                    >+</button>
+                  <p className="cart-item-price">{formatVND(item.price || 0)}</p>
+                  <div className="cart-item-actions">
+                    <div className="cart-item-qty">
+                      <button className="qty-btn" onClick={() => onUpdateQty(item.itemId, item.qty - 1)}>−</button>
+                      <span className="qty-value">{item.qty}</span>
+                      <button
+                        className={`qty-btn ${item.stock !== undefined && item.qty >= item.stock ? 'disabled' : ''}`}
+                        onClick={() => onUpdateQty(item.itemId, item.qty + 1)}
+                        disabled={item.stock !== undefined && item.qty >= item.stock}
+                        title={item.stock !== undefined && item.qty >= item.stock ? `Chỉ còn ${item.stock} sản phẩm` : ""}
+                      >+</button>
+                    </div>
+                    <button className="cart-item-remove" onClick={() => onRemove(item.itemId)}>Xóa</button>
                   </div>
-                  <button className="cart-item-remove" onClick={() => onRemove(item.itemId)}>Xóa</button>
                 </div>
               </div>
             ))
@@ -61,7 +64,15 @@ export default function CartDrawer({ open, cart, total, onClose, onUpdateQty, on
               <span className="cart-subtotal-label">Tạm tính</span>
               <span className="cart-subtotal-value">{formatVND(total)}</span>
             </div>
-            <button className="cart-checkout-btn" onClick={onCheckout}>
+            <button className="btn-shop-black btn-shop-full" onClick={() => {
+              trackBeginCheckout(cart.map(item => ({
+                productId: item.productId,
+                productName: item.name,
+                unitPrice: item.price,
+                quantity: item.qty
+              })), total);
+              onCheckout();
+            }}>
               THANH TOÁN
             </button>
           </div>
