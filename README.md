@@ -42,3 +42,54 @@ hiệu quả kinh doanh và cải thiện trải nghiệm người dùng.
 - Công cụ hỗ trợ: Git, GitHub, Swagger/OpenAPI
 
 ---
+
+## 6. Hướng dẫn cài đặt (Setup Guide)
+
+Để chạy dự án sau khi clone về máy mới, bạn cần thực hiện các bước sau:
+
+### 1. Yêu cầu hệ thống (Prerequisites)
+- **Java**: JDK 17
+- **Database**: MySQL 8.0+
+- **Node.js**: v18+ (khuyên dùng v20 LTS)
+- **Công cụ**: Maven, npm (đi kèm Node.js)
+
+### 2. Thiết lập Cơ sở dữ liệu (Database Setup)
+1. Mở MySQL.
+2. Tạo database và user (theo cấu hình mặc định trong `application.yaml`):
+   ```sql
+   CREATE DATABASE fyd_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE USER 'fyd'@'localhost' IDENTIFIED BY 'fyd123';
+   GRANT ALL PRIVILEGES ON fyd_db.* TO 'fyd'@'localhost';
+   FLUSH PRIVILEGES;
+   ```
+3. Import dữ liệu ban đầu:
+   - Chạy script SQL tại: `sql/init_database.sql`
+
+### 3. Khởi chạy Backend (Spring Boot)
+1. Mở thư mục `back-end` bằng phần mềm lập trình (IntelliJ/VS Code).
+2. Thiết lập biến môi trường (Environment Variable):
+   - `GROQ_API_KEY`: Key để sử dụng tính năng AI (lấy từ Groq Cloud).
+3. Chạy ứng dụng bằng lệnh Maven:
+   ```bash
+   mvn spring-boot:run
+   ```
+   *Backend sẽ chạy tại: http://localhost:8080*
+
+### 4. Khởi chạy Frontend (React Vite)
+1. Mở thư mục `front-end`.
+2. Tạo file `.env` từ file `.env.example`. Điền các ID cần thiết (Google/Facebook).
+3. Cài đặt các thư viện:
+   ```bash
+   npm install
+   ```
+4. Chạy dự án:
+   ```bash
+   npm run dev
+   ```
+   *Frontend sẽ chạy tại: http://localhost:5173*
+
+---
+
+## 7. Tài khoản đăng nhập mặc định
+- **Admin**: `admin` / `admin123`
+- **Customer**: Xem trong bảng `customers` sau khi import dữ liệu.
