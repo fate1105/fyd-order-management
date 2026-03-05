@@ -29,7 +29,7 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: duytd24@gmail.com
-    password: qwnmkipavodvqtne
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -50,22 +50,22 @@ app:
 
 # VNPay Configuration (Sandbox)
 vnpay:
-  tmn-code: 2QXUI4I4
-  hash-secret: JXWXZJQYZZYZZZZZZZZZZZZZZZZZ # Temporary dummy, will use standard sandbox one
+  tmn-code: ${VNPAY_TMN_CODE:}
+  hash-secret: ${VNPAY_HASH_SECRET:}
   api-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
   return-url: http://localhost:5175/shop/payment-callback
   ipn-url: ${app.backend-url}/api/payments/vnpay/ipn
 
 # GHTK Configuration (Sandbox)
 ghtk:
-  api-token: 1234567890abcdef # Temporary dummy
+  api-token: ${GHTK_API_TOKEN:}
   api-url: https://services.ghtk.vn/services/shipment/order
 
 # MoMo Configuration (Sandbox)
 momo:
   partner-code: MOMO
-  access-key: dummy_access_key
-  secret-key: dummy_secret_key
+  access-key: ${MOMO_ACCESS_KEY:}
+  secret-key: ${MOMO_SECRET_KEY:}
   api-url: https://test-payment.momo.vn/v2/gateway/api/create
   return-url: http://localhost:5175/shop/payment-callback
   ipn-url: ${app.backend-url}/api/payments/momo/ipn

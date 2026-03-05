@@ -13,7 +13,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/forecast")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://fydvn.vercel.app"})
 public class ForecastController {
 
     @Autowired

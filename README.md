@@ -36,60 +36,94 @@ hiệu quả kinh doanh và cải thiện trải nghiệm người dùng.
 ---
 
 ## 5. Công nghệ sử dụng
-- Backend: Java Spring Boot, REST API, JWT
-- Frontend: HTML, CSS, Bootstrap, JavaScript
-- Cơ sở dữ liệu: MySQL
-- Công cụ hỗ trợ: Git, GitHub, Swagger/OpenAPI
+| Thành phần | Công nghệ |
+|---|---|
+| Backend | Java 17, Spring Boot, Spring Security, JWT |
+| Frontend | React 19, Vite, CSS |
+| Database | MySQL 8.0+ |
+| AI | Groq Cloud API |
+| Thanh toán | VNPay |
 
 ---
 
-## 6. Hướng dẫn cài đặt (Setup Guide)
+## 6. Hướng dẫn cài đặt nhanh (Quick Setup)
 
-Để chạy dự án sau khi clone về máy mới, bạn cần thực hiện các bước sau:
-
-### 1. Yêu cầu hệ thống (Prerequisites)
-- **Java**: JDK 17
-- **Database**: MySQL 8.0+
+### Yêu cầu hệ thống
+- **Java**: JDK 17+
 - **Node.js**: v18+ (khuyên dùng v20 LTS)
-- **Công cụ**: Maven, npm (đi kèm Node.js)
+- **MySQL**: 8.0+
 
-### 2. Thiết lập Cơ sở dữ liệu (Database Setup)
-1. Mở MySQL.
-2. Tạo database và user (theo cấu hình mặc định trong `application.yaml`):
-   ```sql
-   CREATE DATABASE fyd_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE USER 'fyd'@'localhost' IDENTIFIED BY 'fyd123';
-   GRANT ALL PRIVILEGES ON fyd_db.* TO 'fyd'@'localhost';
-   FLUSH PRIVILEGES;
-   ```
-3. Import dữ liệu ban đầu:
-   - Chạy script SQL tại: `sql/init_database.sql`
+### Bước 1: Clone dự án
+```bash
+git clone https://github.com/<your-username>/fyd-order-management.git
+cd fyd-order-management
+```
 
-### 3. Khởi chạy Backend (Spring Boot)
-1. Mở thư mục `back-end` bằng phần mềm lập trình (IntelliJ/VS Code).
-2. Thiết lập biến môi trường (Environment Variable):
-   - `GROQ_API_KEY`: Key để sử dụng tính năng AI (lấy từ Groq Cloud).
-3. Chạy ứng dụng bằng lệnh Maven:
-   ```bash
-   mvn spring-boot:run
-   ```
-   *Backend sẽ chạy tại: http://localhost:8080*
+### Bước 2: Tạo Database
+```sql
+CREATE DATABASE fyd_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'fyd'@'localhost' IDENTIFIED BY 'fyd123';
+GRANT ALL PRIVILEGES ON fyd_db.* TO 'fyd'@'localhost';
+FLUSH PRIVILEGES;
+```
+Sau đó import dữ liệu mẫu:
+```bash
+mysql -u fyd -pfyd123 fyd_db < sql/init_database.sql
+```
 
-### 4. Khởi chạy Frontend (React Vite)
-1. Mở thư mục `front-end`.
-2. Tạo file `.env` từ file `.env.example`. Điền các ID cần thiết (Google/Facebook).
-3. Cài đặt các thư viện:
-   ```bash
-   npm install
-   ```
-4. Chạy dự án:
-   ```bash
-   npm run dev
-   ```
-   *Frontend sẽ chạy tại: http://localhost:5173*
+### Bước 3: Chạy Backend
+```bash
+cd back-end
+
+# (Tùy chọn) Đặt API key cho tính năng AI
+# Windows:
+set GROQ_API_KEY=your_key_here
+# Linux/Mac:
+export GROQ_API_KEY=your_key_here
+
+# Chạy server
+./mvnw spring-boot:run
+```
+> Backend sẽ chạy tại: http://localhost:8080
+
+### Bước 4: Chạy Frontend
+```bash
+cd front-end
+
+# Copy file env mẫu
+cp .env.example .env
+# Điền các API key cần thiết vào file .env (Google, Facebook)
+
+# Cài đặt thư viện
+npm install
+
+# Chạy dev server
+npm run dev
+```
+> Frontend sẽ chạy tại: http://localhost:5175
 
 ---
 
 ## 7. Tài khoản đăng nhập mặc định
-- **Admin**: `admin` / `admin123`
-- **Customer**: Xem trong bảng `customers` sau khi import dữ liệu.
+| Vai trò | Tài khoản | Mật khẩu |
+|---|---|---|
+| Admin | `admin` | `admin123` |
+| Customer | Xem bảng `customers` sau khi import dữ liệu |
+
+---
+
+## 8. Cấu trúc dự án
+```
+fyd-order-management/
+├── back-end/           # Spring Boot API server
+│   ├── src/main/java/  # Source code
+│   ├── src/main/resources/  # Config (application.yaml)
+│   └── pom.xml         # Maven dependencies
+├── front-end/          # React + Vite SPA
+│   ├── src/            # Source code
+│   ├── package.json    # NPM dependencies
+│   └── vite.config.js  # Vite config
+├── sql/                # Database scripts
+│   └── init_database.sql
+└── README.md
+```

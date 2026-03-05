@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/recommendations")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://fydvn.vercel.app"})
 public class RecommendationController {
 
     @Autowired

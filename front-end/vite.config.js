@@ -39,7 +39,8 @@ export default defineConfig({
             purpose: 'any maskable'
           }
         ]
-      }
+      },
+      workbox: {}
     })
   ],
   server: {

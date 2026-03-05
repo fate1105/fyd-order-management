@@ -14,7 +14,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/promotions")
-@CrossOrigin(origins = "*")
 public class PromotionController {
 
     @Autowired

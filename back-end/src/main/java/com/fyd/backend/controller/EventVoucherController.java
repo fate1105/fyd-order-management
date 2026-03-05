@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/admin/event-vouchers")
-@CrossOrigin(origins = "*")
 public class EventVoucherController {
 
     @Autowired

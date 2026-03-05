@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/featured-zones")
-@CrossOrigin(origins = "*")
 public class FeaturedZoneController {
 
     @Autowired

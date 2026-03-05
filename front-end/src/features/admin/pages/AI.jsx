@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@shared/context/ToastContext";
 import "../styles/dashboard.css";
 import "../styles/ai-insights.css";
-import api from "@shared/utils/api.js";
+import api, { BASE_URL } from "@shared/utils/api.js";
 import { useTranslation } from "react-i18next";
 import SalesForecast from "../components/SalesForecast.jsx";
 
@@ -41,10 +41,10 @@ export default function AI() {
     try {
       const [insightsRes, summaryRes, anomaliesRes] = await Promise.all([
         api.dashboard.getAiSuggestions(),
-        fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/ai/admin-summary`, {
+        fetch(`${BASE_URL}/api/ai/admin-summary`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         }).then(r => r.json()),
-        fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/ai/anomalies`, {
+        fetch(`${BASE_URL}/api/ai/anomalies`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         }).then(r => r.json())
       ]);

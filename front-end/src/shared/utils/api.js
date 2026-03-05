@@ -1,8 +1,29 @@
 // api.js - API service for FYD Admin
 
 import { getSession } from './authSession';
+import { Capacitor } from '@capacitor/core';
 
-export const BASE_URL = 'http://localhost:8080';
+/**
+ * Dynamic BASE_URL logic:
+ * - Native (Android emulator): 10.0.2.2 routes to host machine's localhost
+ * - Native (real device): use VITE_API_URL or your LAN IP
+ * - Web browser: localhost
+ * - Production: use VITE_API_URL environment variable
+ */
+function getBaseUrl() {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) return envUrl; // Production or custom env always wins
+
+  if (Capacitor.isNativePlatform()) {
+    // For real device: use your PC's LAN IP
+    // For emulator only: change to 'http://10.0.2.2:8080'
+    return 'http://192.168.1.20:8080';
+  }
+
+  return 'http://localhost:8080';
+}
+
+export const BASE_URL = getBaseUrl();
 const API_BASE = `${BASE_URL}/api`;
 
 export const getAssetUrl = (url) => {

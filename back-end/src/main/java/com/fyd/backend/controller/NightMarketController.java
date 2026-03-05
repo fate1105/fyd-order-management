@@ -18,7 +18,6 @@ import java.io.PrintWriter;
 
 @RestController
 @RequestMapping("/api/night-market")
-@CrossOrigin(origins = "*")
 public class NightMarketController {
 
     @Autowired

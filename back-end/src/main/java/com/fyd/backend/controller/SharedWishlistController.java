@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/wishlist")
-@CrossOrigin(origins = "*")
 public class SharedWishlistController {
 
     @Autowired

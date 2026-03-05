@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { formatVND } from "@shared/utils/api.js";
+import { formatVND, BASE_URL } from "@shared/utils/api.js";
 import { useToast } from "@shared/context/ToastContext";
 import "../styles/event-vouchers.css";
 import { useTranslation } from "react-i18next";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const API_BASE = BASE_URL;
 
 // SVG Icons
 const CloseIcon = () => (

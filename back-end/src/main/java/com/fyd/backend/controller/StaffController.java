@@ -15,7 +15,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/staff")
-@CrossOrigin(origins = "*")
 @PreAuthorize("hasAnyRole('ADMIN')")
 public class StaffController {
 

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Sparkles, Zap, ShieldCheck } from 'lucide-react';
+import { Sparkles, Zap, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { nightMarketAPI as api } from '@shared/utils/api';
 import { getCustomerSession } from '@shared/utils/customerSession';
 import NightMarketCard from '../components/NightMarketCard';
@@ -9,6 +10,7 @@ import '../styles/NightMarket.css';
 
 const NightMarket = () => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [offers, setOffers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -49,22 +51,32 @@ const NightMarket = () => {
 
     if (loading) {
         return (
-            <div className="night-market-page flex items-center justify-center">
-                <div className="nm-tag-text animate-pulse">Initializing Interface...</div>
+            <div className="night-market-page">
+                <button className="nm-back-btn" onClick={() => navigate('/shop')}>
+                    <ArrowLeft size={18} />
+                    <span>{t('common.back', 'Quay lại')}</span>
+                </button>
+                <div className="nm-tag-text animate-pulse" style={{ textAlign: 'center', marginTop: '30vh' }}>Initializing Interface...</div>
             </div>
         );
     }
 
     if (!isLoggedIn) {
         return (
-            <div className="night-market-page flex flex-col items-center justify-center p-12 text-center">
-                <div className="w-24 h-24 mb-8 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
-                    <Zap className="text-cyan-400" size={48} />
+            <div className="night-market-page">
+                <button className="nm-back-btn" onClick={() => navigate('/shop')}>
+                    <ArrowLeft size={18} />
+                    <span>{t('common.back', 'Quay lại')}</span>
+                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', paddingTop: '15vh' }}>
+                    <div className="w-24 h-24 mb-8 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
+                        <Zap className="text-cyan-400" size={48} />
+                    </div>
+                    <h2 className="nm-title mb-6">Access <span>Denied</span></h2>
+                    <p className="text-slate-400 max-w-md mb-12 italic">
+                        The Night Market is a classified event available only to registered members. Log in to view your personalized offers.
+                    </p>
                 </div>
-                <h2 className="nm-title mb-6">Access <span>Denied</span></h2>
-                <p className="text-slate-400 max-w-md mb-12 italic">
-                    The Night Market is a classified event available only to registered members. Log in to view your personalized offers.
-                </p>
             </div>
         );
     }
@@ -76,6 +88,14 @@ const NightMarket = () => {
                 <div className="nm-glow-1"></div>
                 <div className="nm-glow-2"></div>
             </div>
+
+            <button
+                className="nm-back-btn"
+                onClick={() => navigate('/shop')}
+            >
+                <ArrowLeft size={18} />
+                <span>{t('common.back', 'Quay lại')}</span>
+            </button>
 
             <div className="nm-header">
                 <motion.div

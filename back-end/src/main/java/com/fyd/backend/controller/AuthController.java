@@ -19,7 +19,6 @@ import com.fyd.backend.service.JwtService;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
 public class AuthController {
 
     @Autowired

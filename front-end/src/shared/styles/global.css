@@ -67,6 +67,12 @@ body {
     radial-gradient(900px 650px at 20% 10%, rgba(75, 240, 200, 0.12), transparent 55%),
     radial-gradient(700px 550px at 85% 0%, rgba(110, 168, 255, 0.14), transparent 50%),
     var(--bg);
+
+  /* Safe-area padding for mobile (Capacitor / notch devices) */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* =========================

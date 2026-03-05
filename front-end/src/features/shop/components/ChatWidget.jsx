@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { getCustomerSession } from "@shared/utils/customerSession.js";
+import { BASE_URL } from "@shared/utils/api.js";
 import "./ChatWidget.css";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const API_BASE = BASE_URL;
 
 /**
  * AI Chat Widget component - floating chat bubble for customer support.

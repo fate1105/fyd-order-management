@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { BASE_URL } from "@shared/utils/api.js";
 import "./SalesForecast.css";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const API_BASE = BASE_URL;
 
 // SVG Icons to replace emojis
 const Icons = {

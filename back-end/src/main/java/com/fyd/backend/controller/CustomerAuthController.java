@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/customer/auth")
-@CrossOrigin(origins = "*")
 public class CustomerAuthController {
 
     private final CustomerAuthService customerAuthService;

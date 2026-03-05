@@ -10,7 +10,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/lucky-spin")
-@CrossOrigin(origins = "*")
 public class AdminLuckySpinController {
 
     @Autowired
