@@ -51,22 +51,42 @@ hiệu quả kinh doanh và cải thiện trải nghiệm người dùng.
 ### Yêu cầu hệ thống
 - **Java**: JDK 17+
 - **Node.js**: v18+ (khuyên dùng v20 LTS)
-- **MySQL**: 8.0+
+- **MySQL**: 8.0+ (hoặc Docker)
 
 ### Bước 1: Clone dự án
 ```bash
-git clone https://github.com/<your-username>/fyd-order-management.git
+git clone https://github.com/fate1105/fyd-order-management.git
 cd fyd-order-management
 ```
 
 ### Bước 2: Tạo Database
+
+#### Cách 1: Dùng Docker ⭐ (Khuyên dùng)
+Chỉ cần 1 lệnh — Docker sẽ tự tạo database, user, và import dữ liệu mẫu:
+```bash
+cd docker
+docker compose up -d
+```
+> MySQL sẽ chạy tại `localhost:3306` với user `fyd` / password `fyd123`, database `fyd_db`.
+> File `sql/init_database.sql` được tự động import khi container khởi tạo lần đầu.
+
+Một số lệnh hữu ích:
+```bash
+docker compose down          # Tắt MySQL
+docker compose up -d         # Bật lại (dữ liệu vẫn được giữ)
+docker compose down -v       # Xoá toàn bộ dữ liệu và reset lại từ đầu
+docker exec -it fyd-mysql mysql -u fyd -pfyd123 fyd_db   # Truy cập MySQL CLI
+```
+
+#### Cách 2: Cài MySQL trực tiếp
+1. Mở MySQL và chạy:
 ```sql
 CREATE DATABASE fyd_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'fyd'@'localhost' IDENTIFIED BY 'fyd123';
 GRANT ALL PRIVILEGES ON fyd_db.* TO 'fyd'@'localhost';
 FLUSH PRIVILEGES;
 ```
-Sau đó import dữ liệu mẫu:
+2. Import dữ liệu mẫu:
 ```bash
 mysql -u fyd -pfyd123 fyd_db < sql/init_database.sql
 ```
